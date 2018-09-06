@@ -5,8 +5,8 @@
  *      Author: mike
  */
 
-#ifndef SHAREDMEMORYINT_H_
-#define SHAREDMEMORYINT_H_
+#ifndef SPI_H_
+#define SPI_H_
 
 
 #include <stdint.h>
@@ -33,20 +33,10 @@ public:
 	SPI();
 	~SPI();
 
-
 private:
-
-
-//
 	char txBuffer[TX_BUFFER_SIZE];
 	char rxBuffer[RX_BUFFER_SIZE];
-	//int spiFD;
-protected:
-
 public:
-
-
-
 	uint8_t status;
 	uint8_t sendData(char *data, unsigned int length);
 	uint8_t getData(char *data, uint16_t length);
@@ -55,4 +45,4 @@ public:
 
 
 
-#endif /* SHAREDMEMORYINT_H_ */
+#endif /* SPI_H_ */

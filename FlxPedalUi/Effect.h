@@ -34,7 +34,6 @@ private:
 	string abbr;
 	Json::Reader jsonReader;
 	Json::Value effectDataJson;
-//protected:
 	vector<Parameter> parameters;
 public:
 	Effect(string name, string abbr);
@@ -49,7 +48,6 @@ public:
 	Parameter getParam(int paramIndex);
 	void updateParameter(int index, int direction);
 	int getParamCount();
-	//int getParameterValueIndex(int parameterIndex);
 
 };
 

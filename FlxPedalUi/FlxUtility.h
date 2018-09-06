@@ -45,12 +45,9 @@ struct UtilParam{
 struct UtilType{
 	string name;
 	string abbr;
-	//UtilParam utilParams[UTIL_PARAM_COUNT];
 	vector<UtilParam> utilParams;
 };
 
-/*typedef map<string, UtilParam> ParamMap;
-typedef map<string, ParamMap> TypeMap;*/
 
 class FlxUtility {
 private:
@@ -59,12 +56,8 @@ private:
 
 	Json::Value utilParams;
 
-	//std::map<string,std::map<string,UtilParam>> utilTypeMap;
-
-	//UtilParamType utilParamTypes[2];
 	vector<UtilType> utilTypes;
 
-	//int getParamIndex(string paramType, string paramName);
 public:
 	FlxUtility();
 	virtual ~FlxUtility();

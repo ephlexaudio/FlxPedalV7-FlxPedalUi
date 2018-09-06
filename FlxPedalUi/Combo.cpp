@@ -90,138 +90,15 @@ Effect Combo::getEffect(int effectIndex)
 	return this->effects[effectIndex];
 }
 
-/*void Combo::setEffect(Effect effect, int index)
-{
-	this->effects[index] = effect;
-}*/
 
 void Combo::updateParameter(int effectIndex, int parameterIndex, int direction)
 {
-	this->effects[effectIndex].updateParameter(parameterIndex, direction);
-}
-
-void Combo::addEffect(Json::Value effectDataJson)
-{
-
-	/*string name = effectDataJson["name"].asString();
-	string abbr = effectDataJson["abbr"].asString();
-	Json::Value paramDataArray = effectDataJson["params"];
-
-	for(int i = 0; i < paramDataArray.size(); i++)
+	try
 	{
-
+		this->effects[effectIndex].updateParameter(parameterIndex, direction);
 	}
-	this->effects.push_back()*/
-}
-
-/*string Combo::getComboName()
-{
-	return this->combo["title"].asString();
-}
-
-
-string Combo::getEffectName(int effectIndex)
-{
-	return this->combo["effects"][effectIndex]["name"].asString();
-}
-
-
-string Combo::getEffectAbbr(int effectIndex)
-{
-	return this->combo["effects"][effectIndex]["abbr"].asString();
-}
-
-
-string Combo::getParameterName(int effectIndex, int parameterIndex)
-{
-	return this->combo["effects"][effectIndex]["params"][parameterIndex]["name"].asString();
-}
-
-
-string Combo::getParameterAbbr(int effectIndex, int parameterIndex)
-{
-	return this->combo["effects"][effectIndex]["params"][parameterIndex]["abbr"].asString();
-}
-
-#define dbg 0
-int Combo::getParameterValue(int effectIndex, int parameterIndex)
-{
-#if(dbg >= 1)
-	cout << "********** ENTERING Combo::getParameterValue: " << effectIndex << ":" << parameterIndex << endl;
-#endif
-
-	int parameterValueString = this->combo["effects"][effectIndex]["params"][parameterIndex]["value"].asInt();
-#if(dbg >= 1)
-	cout << "********** EXITING Combo::getParameterValue: " << parameterValueString << endl;
-#endif
-
-	return parameterValueString;
-}
-
-#define dbg 0
-void Combo::updateParameterValue(int effectIndex, int parameterIndex, int direction)
-{
-#if(dbg >= 1)
-	cout << "********** ENTERING Combo::updateParameterValue: " << effectIndex << ":" << parameterIndex << endl;
-#endif
-
-	int parameterValue = this->combo["effects"][effectIndex]["params"][parameterIndex]["value"].asInt();
-
-	if(direction == 1)  parameterValue++;
-	else if(direction == 2)  parameterValue--;
-
-	this->combo["effects"][effectIndex]["params"][parameterIndex]["value"] = parameterValue;
-
-#if(dbg >= 1)
-	cout << "********** EXITING Combo::updateParameterValue: " << direction << ":" << parameterValue << endl;
-#endif
-}
-
-#define dbg 0
-vector<SoftKeyElement> Combo::getEffectSoftKeyElements()
-{
-#if(dbg >= 1)
-	cout << "********** ENTERING Combo::getEffectSoftKeyElements: " << endl;
-#endif
-	vector<SoftKeyElement> effectElements;
-
-	for(int effectIndex = 0; effectIndex < this->combo["effects"].size(); effectIndex++)
+	catch(std::exception &e)
 	{
-		SoftKeyElement tempElement;
-		tempElement.name = this->combo["effects"][effectIndex]["name"].asString();
-		tempElement.abbr = this->combo["effects"][effectIndex]["abbr"].asString();
-		tempElement.index = effectIndex;
-
-		effectElements.push_back(tempElement);
+		cout << "Combo::updateParameter error: " << e.what() << endl;
 	}
-#if(dbg >= 1)
-	cout << "********** EXITING Combo::getEffectSoftKeyElements: " << effectElements.size() << endl;
-#endif
-
-	return effectElements;
 }
-
-#define dbg 0
-vector<SoftKeyElement> Combo::getParamSoftKeyElements(int effectIndex)
-{
-#if(dbg >= 1)
-	cout << "********** ENTERING Combo::getParamSoftKeyElements: " << endl;
-#endif
-	vector<SoftKeyElement> paramElements;
-
-	for(int paramIndex = 0; paramIndex < this->combo["effects"][effectIndex]["params"].size(); paramIndex++)
-	{
-		SoftKeyElement tempElement;
-		tempElement.name = this->combo["effects"][effectIndex]["params"][paramIndex]["name"].asString();
-		tempElement.abbr = this->combo["effects"][effectIndex]["params"][paramIndex]["abbr"].asString();
-		tempElement.index = paramIndex;
-
-		paramElements.push_back(tempElement);
-	}
-
-#if(dbg >= 1)
-	cout << "********** EXITING Combo::getParamSoftKeyElements: " << paramElements.size() << endl;
-#endif
-
-	return paramElements;
-}*/

@@ -9,6 +9,8 @@
 
 using namespace std;
 
+int rxFifoFd;
+int txFifoFd;
 
 
 const char* rxFifoPath = "/home/pedalUiRx";
@@ -19,29 +21,34 @@ const char* txFifoPath = "/home/pedalUiTx";
 #define dbg 2
 MainInterface::MainInterface() {
 	// TODO Auto-generated constructor stub
-	this->rxFifoFd = -1;
-	this->txFifoFd = -1;
+	rxFifoFd = -1;
+	txFifoFd = -1;
 	errno = 0;
 	if(mkfifo(rxFifoPath,S_IWUSR | S_IRUSR) != 0)
 	{
 		cout << "mkfifo rxFifoPath errno: " << errno << endl;
 	}
+	errno = 0;
 	if(mkfifo(txFifoPath,S_IWUSR | S_IRUSR) != 0)
 	{
 		cout << "mkfifo txFifoPath errno: " << errno << endl;
 	}
 
-	for(int i = 0; (this->rxFifoFd == -1 || this->txFifoFd == -1) && i < 20; i++)
+	int rxFifoFdErr,txFifoFdErr = 0;
+	for(int i = 0; (rxFifoFd == -1 || txFifoFd == -1) && i < 20; i++)
 	{
 		errno = 0;
-		this->rxFifoFd = open(rxFifoPath, O_RDONLY | O_NONBLOCK);
-		usleep(100000);
-		this->txFifoFd = open(txFifoPath, O_WRONLY | O_NONBLOCK);
-		usleep(100000);
+		rxFifoFd = open(rxFifoPath, O_RDWR | O_NONBLOCK);
+		rxFifoFdErr = errno;
+		usleep(10000);
+		errno = 0;
+		txFifoFd = open(txFifoPath, O_RDWR | O_NONBLOCK);
+		txFifoFdErr = errno;
+		usleep(10000);
 #if(dbg >= 2)
 		cout << "waiting for FIFOs" << endl;
-		cout << "OFX_PEDAL_UI_RPI: " << strerror(errno) << endl;
-		cout << "FIFO FDs: " << this->rxFifoFd << ":" << this->txFifoFd << endl;
+		cout << "OFX_PEDAL_UI_RPI: " << strerror(rxFifoFdErr) << ":" << strerror(txFifoFdErr) << endl;
+		cout << "FIFO FDs: " << rxFifoFd << ":" << txFifoFd << endl;
 #endif
 	}
 #if(dbg >= 2)
@@ -54,10 +61,10 @@ MainInterface::~MainInterface() {
 
 	int ret;
 
-	if(this->txFifoFd >= 0)
+	if(txFifoFd >= 0)
 	{
 		 cout << "closing and removing /home/pedalUiTx." << endl;
-		close(this->txFifoFd);
+		close(txFifoFd);
 		system("rm /home/pedalUiTx");
 	}
 	else
@@ -65,10 +72,10 @@ MainInterface::~MainInterface() {
 		 cout << "/home/pedalUiTx not found." << endl;
 	}
 
-	if(this->rxFifoFd >= 0)
+	if(rxFifoFd >= 0)
 	{
 		 cout << "closing and removing /home/pedalUiRx." << endl;
-		close(this->rxFifoFd);
+		close(rxFifoFd);
 		system("rm /home/pedalUiRx");
 	}
 	else
@@ -110,9 +117,9 @@ string MainInterface::getTestComboUiData()
 		for(int parameterIndex = 0; parameterIndex < 6; parameterIndex++)
 		{
 			snprintf(tempString,15,"parameter%d", parameterIndex);
-			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["name"] = string(tempString);// + parameterIndex;
+			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["name"] = string(tempString);
 			snprintf(tempString,15,"prm%d", parameterIndex);
-			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["abbr"] = string(tempString);// + parameterIndex;
+			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["abbr"] = string(tempString);
 			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["value"] = 10;
 			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["type"] = 0;
 		}
@@ -122,7 +129,6 @@ string MainInterface::getTestComboUiData()
 
 	snprintf(tempString, 100, "{\"title\": \"%s\", \"effects\":[",  uiDataJson["title"].asString().c_str());
 	uiDataString += string(tempString);
-	//uiDataString += string();
 	for(int effectIndex = 0; effectIndex < 2; effectIndex++)
 	{
 		snprintf(tempString,100,"{\"name\":\"%s\",\"abbr\":\"%s\",\"params\":[",
@@ -131,16 +137,13 @@ string MainInterface::getTestComboUiData()
 		uiDataString += string(tempString);
 		for(int parameterIndex = 0; parameterIndex < 6; parameterIndex++)
 		{
-
 			snprintf(tempString,100,"{\"name\":\"%s\",\"abbr\":\"%s\",\"value\":%d,\"type\":%d}",
-			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["name"].asString().c_str(),// + parameterIndex;
-			//snprintf(tempString,15,"prm%d", parameterIndex);
-			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["abbr"].asString().c_str(),// + parameterIndex;
+			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["name"].asString().c_str(),
+			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["abbr"].asString().c_str(),
 			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["value"].asInt(),
 			uiDataJson["effects"][effectIndex]["params"][parameterIndex]["type"].asInt());
 			uiDataString += string(tempString);
 			if(parameterIndex < 5) uiDataString += string(",");
-
 		}
 		uiDataString += "]}";
 		if(effectIndex < 1) uiDataString += string(",");
@@ -156,7 +159,7 @@ string MainInterface::getTestComboUiData()
 }
 
 
-#define dbg 0
+#define dbg 1
 string MainInterface::sendUserRequestDataAndWaitForResponse(string userRequestData, int waitTime)
 {
 	int lengthWritten = 0;
@@ -176,12 +179,12 @@ string MainInterface::sendUserRequestDataAndWaitForResponse(string userRequestDa
 
 	clearBuffer(this->rxData,RX_DATA_SIZE);
 
-	lengthWritten = write(this->txFifoFd, userRequestDataCharArray,100);
+	lengthWritten = write(txFifoFd, userRequestDataCharArray,100);
 
 	if(lengthWritten > 0)
 	{
 		usleep(waitTime*1000);
-		while((this->rxDataSize = read(this->rxFifoFd,this->rxData,RX_DATA_SIZE)) > 1)
+		while((this->rxDataSize = read(rxFifoFd,this->rxData,RX_DATA_SIZE)) > 1)
 		{
 			responseData += string(this->rxData);
 		}
@@ -216,7 +219,7 @@ int MainInterface::sendUserRequestData(string userRequestData)
 	cout << endl;
 #endif
 
-	if((lengthWritten = write(this->txFifoFd, userRequestDataCharArray,100)) > 0)
+	if((lengthWritten = write(txFifoFd, userRequestDataCharArray,100)) > 0)
 	{
 		status = 0;
 	}
@@ -236,7 +239,7 @@ string MainInterface::getUserRequestResponse()
 	cout << "********** ENTERING MainInterface::getUserRequestResponse: " << endl;
 #endif
 
-	while((this->rxDataSize = read(this->rxFifoFd,this->rxData,RX_DATA_SIZE)) > 1)
+	while((this->rxDataSize = read(rxFifoFd,this->rxData,RX_DATA_SIZE)) > 1)
 	{
 		responseData += string(this->rxData);
 	}
@@ -250,7 +253,7 @@ string MainInterface::getUserRequestResponse()
 }
 
 
-#define dbg 0
+#define dbg 2
 vector<string> MainInterface::listCombos()
 {
 #if(dbg >= 1)
@@ -263,13 +266,15 @@ vector<string> MainInterface::listCombos()
 #if(dbg >= 1)
 	cout << " PEDAL UI REQUESTING COMBO LIST" << endl;
 #endif
+	dataFromOfxMain.clear();
 	dataFromOfxMain = this->sendUserRequestDataAndWaitForResponse("listCombos", 500);
 #if(dbg >= 1)
 	cout << " PEDAL UI  COMBO LIST REQUESTED" << endl;
 #endif
 	char *token;
 	char dataFromOfxMainCharArray[RX_DATA_SIZE];
-	strncpy(dataFromOfxMainCharArray, dataFromOfxMain.c_str(),RX_DATA_SIZE);
+	strncpy(dataFromOfxMainCharArray, dataFromOfxMain.c_str(),dataFromOfxMain.size());
+	dataFromOfxMain.clear();
 	token = strtok(dataFromOfxMainCharArray,",");
 	while(token != NULL)
 	{
@@ -304,7 +309,7 @@ string MainInterface::getComboUiData(string comboName)
 	if(comboName.empty() == false)
 	{
 		string getComboCommandString = "getCombo:" + comboName;
-		comboString = this->sendUserRequestDataAndWaitForResponse(getComboCommandString, 500);
+		comboString = this->sendUserRequestDataAndWaitForResponse(getComboCommandString, 1000);
 	}
 	else
 	{
@@ -452,17 +457,16 @@ PedalStatus MainInterface::getCurrentStatus(string activeInterface)
 
 
 	stringStartIndexes[0] = getCurrentStatusResponse.find('|',0);
-	getCurrentStatusResponseSubstring[0] = getCurrentStatusResponse.substr(0,stringStartIndexes[0]/*getCurrentStatusResponse.find(":")+1*/);
+	getCurrentStatusResponseSubstring[0] = getCurrentStatusResponse.substr(0,stringStartIndexes[0]);
 	getCurrentStatusResponseSubstring[0] = getCurrentStatusResponseSubstring[0].substr(getCurrentStatusResponseSubstring[0].find(":")+1);
 	_pedalStatus.globalComboIndex = atoi(getCurrentStatusResponseSubstring[0].c_str());
 
 	stringStartIndexes[1] = getCurrentStatusResponse.find('|',stringStartIndexes[0]+1);
-	getCurrentStatusResponseSubstring[1] = getCurrentStatusResponse.substr(stringStartIndexes[0]+1, stringStartIndexes[1]-stringStartIndexes[0]-1/*getCurrentStatusResponse.find(":")+1*/);
+	getCurrentStatusResponseSubstring[1] = getCurrentStatusResponse.substr(stringStartIndexes[0]+1, stringStartIndexes[1]-stringStartIndexes[0]-1);
 	getCurrentStatusResponseSubstring[1] = getCurrentStatusResponseSubstring[1].substr(getCurrentStatusResponseSubstring[1].find(":")+1);
 	strncpy(_pedalStatus.currentStatus,getCurrentStatusResponseSubstring[1].c_str(),20);
 
-	//stringStartIndexes[2] = getCurrentStatusResponse.find('|',stringStartIndexes[1]+2);
-	getCurrentStatusResponseSubstring[2] = getCurrentStatusResponse.substr(stringStartIndexes[1]+1/*getCurrentStatusResponse.find(":")*/);
+	getCurrentStatusResponseSubstring[2] = getCurrentStatusResponse.substr(stringStartIndexes[1]+1);
 	getCurrentStatusResponseSubstring[2] = getCurrentStatusResponseSubstring[2].substr(getCurrentStatusResponseSubstring[2].find(":")+1);
 	_pedalStatus.hostGuiActive = atoi(getCurrentStatusResponseSubstring[2].c_str());
 
@@ -495,17 +499,16 @@ PedalStatus MainInterface::parseCurrentStatusString(string statusString)
 #endif
 
 	stringStartIndexes[0] = statusString.find('|',0);
-	getCurrentStatusResponseSubstring[0] = statusString.substr(0,stringStartIndexes[0]/*getCurrentStatusResponse.find(":")+1*/);
+	getCurrentStatusResponseSubstring[0] = statusString.substr(0,stringStartIndexes[0]);
 	getCurrentStatusResponseSubstring[0] = getCurrentStatusResponseSubstring[0].substr(getCurrentStatusResponseSubstring[0].find(":")+1);
 	_pedalStatus.globalComboIndex = atoi(getCurrentStatusResponseSubstring[0].c_str());
 
 	stringStartIndexes[1] = statusString.find('|',stringStartIndexes[0]+1);
-	getCurrentStatusResponseSubstring[1] = statusString.substr(stringStartIndexes[0]+1, stringStartIndexes[1]-stringStartIndexes[0]-1/*getCurrentStatusResponse.find(":")+1*/);
+	getCurrentStatusResponseSubstring[1] = statusString.substr(stringStartIndexes[0]+1, stringStartIndexes[1]-stringStartIndexes[0]-1);
 	getCurrentStatusResponseSubstring[1] = getCurrentStatusResponseSubstring[1].substr(getCurrentStatusResponseSubstring[1].find(":")+1);
 	strncpy(_pedalStatus.currentStatus,getCurrentStatusResponseSubstring[1].c_str(),20);
 
-	//stringStartIndexes[2] = getCurrentStatusResponse.find('|',stringStartIndexes[1]+2);
-	getCurrentStatusResponseSubstring[2] = statusString.substr(stringStartIndexes[1]+1/*getCurrentStatusResponse.find(":")*/);
+	getCurrentStatusResponseSubstring[2] = statusString.substr(stringStartIndexes[1]+1);
 	getCurrentStatusResponseSubstring[2] = getCurrentStatusResponseSubstring[2].substr(getCurrentStatusResponseSubstring[2].find(":")+1);
 	_pedalStatus.hostGuiActive = atoi(getCurrentStatusResponseSubstring[2].c_str());
 
@@ -546,17 +549,16 @@ PedalStatus MainInterface::getCurrentStatus()
 
 
 	stringStartIndexes[0] = getCurrentStatusResponse.find('|',0);
-	getCurrentStatusResponseSubstring[0] = getCurrentStatusResponse.substr(0,stringStartIndexes[0]/*getCurrentStatusResponse.find(":")+1*/);
+	getCurrentStatusResponseSubstring[0] = getCurrentStatusResponse.substr(0,stringStartIndexes[0]);
 	getCurrentStatusResponseSubstring[0] = getCurrentStatusResponseSubstring[0].substr(getCurrentStatusResponseSubstring[0].find(":")+1);
 	_pedalStatus.globalComboIndex = atoi(getCurrentStatusResponseSubstring[0].c_str());
 
 	stringStartIndexes[1] = getCurrentStatusResponse.find('|',stringStartIndexes[0]+1);
-	getCurrentStatusResponseSubstring[1] = getCurrentStatusResponse.substr(stringStartIndexes[0]+1, stringStartIndexes[1]-stringStartIndexes[0]-1/*getCurrentStatusResponse.find(":")+1*/);
+	getCurrentStatusResponseSubstring[1] = getCurrentStatusResponse.substr(stringStartIndexes[0]+1, stringStartIndexes[1]-stringStartIndexes[0]-1);
 	getCurrentStatusResponseSubstring[1] = getCurrentStatusResponseSubstring[1].substr(getCurrentStatusResponseSubstring[1].find(":")+1);
 	strncpy(_pedalStatus.currentStatus,getCurrentStatusResponseSubstring[1].c_str(),20);
 
-	//stringStartIndexes[2] = getCurrentStatusResponse.find('|',stringStartIndexes[1]+2);
-	getCurrentStatusResponseSubstring[2] = getCurrentStatusResponse.substr(stringStartIndexes[1]+1/*getCurrentStatusResponse.find(":")*/);
+	getCurrentStatusResponseSubstring[2] = getCurrentStatusResponse.substr(stringStartIndexes[1]+1);
 	getCurrentStatusResponseSubstring[2] = getCurrentStatusResponseSubstring[2].substr(getCurrentStatusResponseSubstring[2].find(":")+1);
 	_pedalStatus.hostGuiActive = atoi(getCurrentStatusResponseSubstring[2].c_str());
 
@@ -568,11 +570,3 @@ PedalStatus MainInterface::getCurrentStatus()
 
 	return _pedalStatus;
 }
-
-/*void MainInterface::clearBuffer(char *buffer, int bufferSize)
-{
-	for(int i = 0; i < bufferSize; i++)
-	{
-		buffer[i] = 0;
-	}
-}*/

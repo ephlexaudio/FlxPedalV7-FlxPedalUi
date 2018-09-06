@@ -33,8 +33,6 @@ UserInterface2::UserInterface2() {
 	this->rotEncOut[1] = this->initializePin(this->rotEncOut[1],ROTENC_OUTB,"in");
 	this->rotEncRst = this->initializePin(this->rotEncRst,RST_ROTENC_FFS,"out");
 
-	/*this->spiTest[0] = this->initializePin(this->spiTest[0],10, "out");
-	this->spiTest[1] = this->initializePin(this->spiTest[1],11, "out");*/
 	this->powerButton = this->initializePin(this->powerButton,POWER_BUTTON,"in");
 	this->inputCoupling[0] = this->initializePin(this->inputCoupling[0],IN2_AC_COUPLED,"out");
 	this->inputCoupling[1] = this->initializePin(this->inputCoupling[1],IN2_DC_COUPLED,"out");
@@ -62,7 +60,6 @@ GPIOClass UserInterface2::initializePin(GPIOClass pin, int pinNumber, string dir
 	strncpy(dirCharArray, direction.c_str(),4);
 	if(pin.export_gpio() == -1) status = -1;
 	if(pin.setdir_gpio(dirCharArray) == -1) status = -1;
-	//if(pin->setval_gpio(pinNumber) == -1) status = -1;
 
 #if(dbg >= 1)
 	cout << "********** EXITING UserInterface2::initializePin: " << status << endl;
@@ -70,29 +67,6 @@ GPIOClass UserInterface2::initializePin(GPIOClass pin, int pinNumber, string dir
 	if(status == -1) pin = NULL;
 	return pin;
 }
-
-/*#define dbg 0
-int UserInterface::initializePin(GPIOClass *pin, int pinNumber, string direction)
-{
-#if(dbg >= 1)
-	cout << "********** ENTERING UserInterface::initializePin: " << pinNumber << ": " << direction << endl;
-#endif
-	int status = 0;
-
-	//pin = new GPIOClass(pinNumber);
-
-	char dirCharArray[4];
-	strncpy(dirCharArray, direction.c_str(),4);
-	if(pin->export_gpio() == -1) status = -1;
-	if(pin->setdir_gpio(dirCharArray) == -1) status = -1;
-	//if(pin->setval_gpio(pinNumber) == -1) status = -1;
-
-#if(dbg >= 1)
-	cout << "********** EXITING UserInterface::initializePin: " << status << endl;
-#endif
-
-	return status;
-}*/
 
 
 void UserInterface2::printPinData(GPIOClass pin)
@@ -167,7 +141,6 @@ int UserInterface2::readEncoder()
 	int rotEncB = 0;
 	this->rotEncOut[0].getval_gpio(rotEncA);
 	this->rotEncOut[1].getval_gpio(rotEncB);
-	//cout << rotEncA << ":" << rotEncB << endl;
 	result = -1*rotEncA + rotEncB;
 #if(dbg >= 1)
 	cout << "********** EXITING UserInterface2::readEncoder: " << rotEncA << ":" << rotEncB << "->" << result << endl;
@@ -196,7 +169,6 @@ void UserInterface2::writeLcdLine(int lineNumber, string lineString)
 	{
 		strcat(sendCharArray," ");
 	}
-	//strncat(sendCharArray,0,22);
 	this->spi.sendData(sendCharArray,22);
 	usleep(LCD_LINE_WRITE_SPACING);
 
@@ -209,7 +181,7 @@ void UserInterface2::writeLcdLine(int lineNumber, string lineString)
 }
 
 
-#define dbg 0
+#define dbg 2
 void UserInterface2::writeLcdLine(int lineNumber, char *lineString)
 {
 #if(dbg >= 1)
@@ -252,5 +224,3 @@ void UserInterface2::powerOff()
 #endif
 
 }
-
-

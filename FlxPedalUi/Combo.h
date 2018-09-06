@@ -35,7 +35,6 @@ private:
 	Json::Reader jsonReader;
 	Json::Value comboDataJson;
 	string name;
-//protected:
 	vector<Effect> effects;
 public:
 	Combo();
@@ -49,7 +48,6 @@ public:
 	vector<Effect> getEffects();
 	Effect getEffect(int effectIndex);
 	void updateParameter(int effectIndex, int parameterIndex, int direction);
-	//void setEffect(Effect effect, int index);
 };
 
 #endif /* COMBO_H_ */

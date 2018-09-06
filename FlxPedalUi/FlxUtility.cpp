@@ -11,59 +11,44 @@ FlxUtility::FlxUtility() {
 	// TODO Auto-generated constructor stub
 	UtilType tempType;
 	UtilParam tempParam;
+  // Create utility menu
+	try
+	{
+		tempType.name = "noiseGate";
+		tempType.abbr = "gate";
+		tempParam.name = "openThres";
+		tempParam.abbr = "oTrs";
+		tempParam.utilParamIndex = 0;
+		tempType.utilParams.push_back(tempParam);
+		tempParam.name = "closeThres";
+		tempParam.abbr = "cTrs";
+		tempParam.utilParamIndex = 1;
+		tempType.utilParams.push_back(tempParam);
+		tempParam.name = "gain";
+		tempParam.abbr = "gain";
+		tempParam.utilParamIndex = 2;
+		tempType.utilParams.push_back(tempParam);
+		this->utilTypes.push_back(tempType);
 
-	/*this->utilParamTypes[0].name = "noiseGate";
-	this->utilParamTypes[0].abbr = "gate";*/
-	tempType.name = "noiseGate";
-	tempType.abbr = "gate";
-	/*this->utilParamTypes[0].utilParams[0].name = "highThres";
-	this->utilParamTypes[0].utilParams[0].abbr = "hTrs";
-	this->utilParamTypes[0].utilParams[0].utilParamIndex = 0;
-	this->utilParamTypes[0].utilParams[1].name = "lowThres";
-	this->utilParamTypes[0].utilParams[1].abbr = "lTrs";
-	this->utilParamTypes[0].utilParams[1].utilParamIndex = 1;
-	this->utilParamTypes[0].utilParams[2].name = "gain";
-	this->utilParamTypes[0].utilParams[2].abbr = "gain";
-	this->utilParamTypes[0].utilParams[2].utilParamIndex = 2;*/
-	tempParam.name = "openThres";
-	tempParam.abbr = "oTrs";
-	tempParam.utilParamIndex = 0;
-	//tempParam.value = 0.001;
-	tempType.utilParams.push_back(tempParam);
-	tempParam.name = "closeThres";
-	tempParam.abbr = "cTrs";
-	tempParam.utilParamIndex = 1;
-	//tempParam.value = 0.002;
-	tempType.utilParams.push_back(tempParam);
-	tempParam.name = "gain";
-	tempParam.abbr = "gain";
-	tempParam.utilParamIndex = 2;
-	//tempParam.value = 0.003;
-	tempType.utilParams.push_back(tempParam);
-	this->utilTypes.push_back(tempType);
+		tempType.utilParams.clear();
+		tempType.name = "trigger";
+		tempType.abbr = "trgr";
+		tempParam.name = "highThres";
+		tempParam.abbr = "hTrs";
+		tempParam.utilParamIndex = 3;
+		tempType.utilParams.push_back(tempParam);
+		tempParam.name = "lowThres";
+		tempParam.abbr = "lTrs";
+		tempParam.utilParamIndex = 4;
+		tempType.utilParams.push_back(tempParam);
+		this->utilTypes.push_back(tempType);
 
-	tempType.utilParams.clear();
-	/*this->utilParamTypes[1].name = "trigger";
-	this->utilParamTypes[1].abbr = "trgr";*/
-	tempType.name = "trigger";
-	tempType.abbr = "trgr";
-	/*this->utilParamTypes[1].utilParams[0].name = "highThres";
-	this->utilParamTypes[1].utilParams[0].abbr = "hTrs";
-	this->utilParamTypes[1].utilParams[0].utilParamIndex = 3;
-	this->utilParamTypes[1].utilParams[1].name = "lowThres";
-	this->utilParamTypes[1].utilParams[1].abbr = "lTrs";
-	this->utilParamTypes[1].utilParams[1].utilParamIndex = 4;*/
-	tempParam.name = "highThres";
-	tempParam.abbr = "hTrs";
-	tempParam.utilParamIndex = 3;
-	//tempParam.value = 0.004;
-	tempType.utilParams.push_back(tempParam);
-	tempParam.name = "lowThres";
-	tempParam.abbr = "lTrs";
-	tempParam.utilParamIndex = 4;
-	//tempParam.value = 0.005;
-	tempType.utilParams.push_back(tempParam);
-	this->utilTypes.push_back(tempType);
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::FlxUtility error: " << e.what() << endl;
+	}
+
 }
 
 FlxUtility::~FlxUtility() {
@@ -78,18 +63,22 @@ int FlxUtility::getFlxUtilityParams(string paramString)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityParams: " << paramString << endl;
 #endif
 
-	this->utilParamsReader.parse(paramString,this->utilParams);
+	try
+	{
+		this->utilParamsReader.parse(paramString,this->utilParams);
+		this->utilTypes[0].utilParams[0].value = this->utilParams["noiseGate"]["openThres"].asFloat();
+		this->utilTypes[0].utilParams[1].value = this->utilParams["noiseGate"]["closeThres"].asFloat();
+		this->utilTypes[0].utilParams[2].value = this->utilParams["noiseGate"]["gain"].asFloat();
+		this->utilTypes[1].utilParams[0].value = this->utilParams["trigger"]["highThres"].asFloat();
+		this->utilTypes[1].utilParams[1].value = this->utilParams["trigger"]["lowThres"].asFloat();
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityParams error: " << e.what() << endl;
+	}
 
-#if(dbg >= 2)
-	cout << "this->utilParams: " << endl;
-	cout << this->utilParams.toStyledString() << endl;
-#endif
 
-	this->utilTypes[0].utilParams[0].value = this->utilParams["noiseGate"]["openThres"].asFloat();
-	this->utilTypes[0].utilParams[1].value = this->utilParams["noiseGate"]["closeThres"].asFloat();
-	this->utilTypes[0].utilParams[2].value = this->utilParams["noiseGate"]["gain"].asFloat();
-	this->utilTypes[1].utilParams[0].value = this->utilParams["trigger"]["highThres"].asFloat();
-	this->utilTypes[1].utilParams[1].value = this->utilParams["trigger"]["lowThres"].asFloat();
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityParams: " << endl;
@@ -106,45 +95,50 @@ int FlxUtility::changeFlxUtilityValue(int utilTypeIndex, int utilParamIndex, int
 	cout << "********** ENTERING FlxUtility::changeFlxUtilityValue: ";
 	cout << utilTypeIndex << ", " << utilParamIndex << ", " << rotaryEnc << endl;
 #endif
+	try
+	{
+		float utilValue = this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value;
 
-	float utilValue = this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value;
+		if(1.0 < fabsf(utilValue))
+		{
+			this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.1*rotaryEnc;
+
+		}
+		else if(0.1 < fabsf(utilValue) && fabsf(utilValue) <= 1.0)
+		{
+			this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.01*rotaryEnc;
+
+		}
+		else if(0.01 < fabsf(utilValue) && fabsf(utilValue) <= 0.1)
+		{
+			this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.001*rotaryEnc;
+
+		}
+		else if(0.001 < fabsf(utilValue) && fabsf(utilValue) <= 0.01)
+		{
+			this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.0001*rotaryEnc;
+		}
+		else if(0.0001 < fabsf(utilValue) && fabsf(utilValue) <= 0.001)
+		{
+			this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.00001*rotaryEnc;
+		}
+		else if(fabsf(utilValue) <= 0.0001)
+		{
+			this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.000001*rotaryEnc;
+		}
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::changeFlxUtilityValue error: " << e.what() << endl;
+	}
+
+
 
 #if(dbg >= 2)
 	cout << "utilValue: " << utilValue << endl;
 	cout << "fabsf(utilValue): " << fabsf(utilValue) << endl;
 #endif
 
-	if(1.0 < fabsf(utilValue))
-	{
-		this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.1*rotaryEnc;
-
-	}
-	else if(0.1 < fabsf(utilValue) && fabsf(utilValue) <= 1.0)
-	{
-		this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.01*rotaryEnc;
-
-	}
-	else if(0.01 < fabsf(utilValue) && fabsf(utilValue) <= 0.1)
-	{
-		this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.001*rotaryEnc;
-
-	}
-	else if(0.001 < fabsf(utilValue) && fabsf(utilValue) <= 0.01)
-	{
-		this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.0001*rotaryEnc;
-	}
-	else if(0.0001 < fabsf(utilValue) && fabsf(utilValue) <= 0.001)
-	{
-		this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.00001*rotaryEnc;
-	}
-	else if(/*0.00001 <= fabsf(utilValue) && */fabsf(utilValue) <= 0.0001)
-	{
-		this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.000001*rotaryEnc;
-	}
-	/*else
-	{
-		this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].value += 0.0000001*rotaryEnc;
-	}*/
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::changeFlxUtilityValue: ";
@@ -162,11 +156,19 @@ vector<string> FlxUtility::getFlxUtilityTypeNameList()
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityTypeNameList: " << endl;
 #endif
-
-	for(int i = 0; i < this->utilTypes.size(); i++)
+	try
 	{
-		paramTypeList.push_back(this->utilTypes[i].name);
+		for(int i = 0; i < this->utilTypes.size(); i++)
+		{
+			paramTypeList.push_back(this->utilTypes[i].name);
+		}
+
 	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityTypeNameList error: " << e.what() << endl;
+	}
+
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityTypeNameList: " << paramTypeList.size() << endl;
 #endif
@@ -189,11 +191,19 @@ vector<string> FlxUtility::getFlxUtilityTypeAbbrList()
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityTypeNameList: " << endl;
 #endif
-
-	for(int i = 0; i < this->utilTypes.size(); i++)
+	try
 	{
-		paramTypeList.push_back(this->utilTypes[i].abbr);
+		for(int i = 0; i < this->utilTypes.size(); i++)
+		{
+			paramTypeList.push_back(this->utilTypes[i].abbr);
+		}
+
 	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityTypeAbbrList error: " << e.what() << endl;
+	}
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityTypeNameList: " << paramTypeList.size() << endl;
@@ -211,7 +221,17 @@ vector<string> FlxUtility::getFlxUtilityTypeAbbrList()
 
 int FlxUtility::getFlxUtilityTypeVectorSize()
 {
-	return this->utilTypes.size();
+	int size = 0;
+	try
+	{
+		size = this->utilTypes.size();
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityTypeVectorSize error: " << e.what() << endl;
+	}
+
+	return size;
 }
 
 
@@ -223,11 +243,19 @@ vector<string> FlxUtility::getFlxUtilityParamNameList(int paramTypeIndex)
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityTypeNameList: " << endl;
 #endif
-
-	for(int i = 0; i < this->utilTypes[paramTypeIndex].utilParams.size(); i++)
+	try
 	{
-		paramList.push_back(this->utilTypes[paramTypeIndex].utilParams[i].name);
+		for(int i = 0; i < this->utilTypes[paramTypeIndex].utilParams.size(); i++)
+		{
+			paramList.push_back(this->utilTypes[paramTypeIndex].utilParams[i].name);
+		}
+
 	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityParamNameList error: " << e.what() << endl;
+	}
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityTypeNameList: " << paramList.size() << endl;
@@ -250,11 +278,19 @@ vector<string> FlxUtility::getFlxUtilityParamAbbrList(int paramTypeIndex)
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityParamAbbrList: " << endl;
 #endif
-
-	for(int i = 0; i < this->utilTypes[paramTypeIndex].utilParams.size(); i++)
+	try
 	{
-		paramList.push_back(this->utilTypes[paramTypeIndex].utilParams[i].abbr);
+		for(int i = 0; i < this->utilTypes[paramTypeIndex].utilParams.size(); i++)
+		{
+			paramList.push_back(this->utilTypes[paramTypeIndex].utilParams[i].abbr);
+		}
+
 	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityParamAbbrList error: " << e.what() << endl;
+	}
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityParamAbbrList: " << paramList.size() << endl;
@@ -272,7 +308,16 @@ vector<string> FlxUtility::getFlxUtilityParamAbbrList(int paramTypeIndex)
 
 int FlxUtility::getFlxUtilityParamVectorSize(int typeIndex)
 {
-	return this->utilTypes[typeIndex].utilParams.size();
+	int size = 0;
+	try
+	{
+		size = this->utilTypes[typeIndex].utilParams.size();
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityParamVectorSize error: " << e.what() << endl;
+	}
+	return size;
 }
 
 
@@ -283,8 +328,16 @@ string FlxUtility::getFlxUtilityTypeName(int typeIndex)
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityTypeName: " << typeIndex << endl;
 #endif
+	try
+	{
+		typeName = this->utilTypes[typeIndex].name;
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityTypeName error: " << e.what() << endl;
+	}
 
-	typeName = this->utilTypes[typeIndex].name;
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityTypeName: " << typeName << endl;
@@ -299,8 +352,16 @@ string FlxUtility::getFlxUtilityTypeAbbr(int typeIndex)
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityTypeAbbr: " << typeIndex << endl;
 #endif
+	try
+	{
+		typeAbbr = this->utilTypes[typeIndex].abbr;
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityTypeAbbr error: " << e.what() << endl;
+	}
 
-	typeAbbr = this->utilTypes[typeIndex].abbr;
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityTypeAbbr: " << typeAbbr << endl;
@@ -315,8 +376,16 @@ string FlxUtility::getFlxUtilityParamName(int typeIndex, int paramIndex)
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityParamName: " << typeIndex << "," << paramIndex << endl;
 #endif
+	try
+	{
+		paramName = this->utilTypes[typeIndex].utilParams[paramIndex].name;
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityParamName error: " << e.what() << endl;
+	}
 
-	paramName = this->utilTypes[typeIndex].utilParams[paramIndex].name;
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityParamName: " << paramName << endl;
@@ -331,8 +400,16 @@ string FlxUtility::getFlxUtilityParamAbbr(int typeIndex, int paramIndex)
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityParamAbbr: " << typeIndex << "," << paramIndex << endl;
 #endif
+	try
+	{
+		paramAbbr = this->utilTypes[typeIndex].utilParams[paramIndex].abbr;
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityParamAbbr error: " << e.what() << endl;
+	}
 
-	paramAbbr = this->utilTypes[typeIndex].utilParams[paramIndex].abbr;
+
 
 #if(dbg >= 1)
 	cout << "********** EXITING FlxUtility::getFlxUtilityParamAbbr: " << paramAbbr << endl;
@@ -347,6 +424,14 @@ float FlxUtility::getFlxUtilityParamValue(int typeIndex, int paramIndex)
 #if(dbg >= 1)
 	cout << "********** ENTERING FlxUtility::getFlxUtilityParamValue: " << typeIndex << "," << paramIndex << endl;
 #endif
+	try
+	{
+		paramValue = this->utilTypes[typeIndex].utilParams[paramIndex].value;
+	}
+	catch(std::exception &e)
+	{
+		cout << "FlxUtility::getFlxUtilityParamValue error: " << e.what() << endl;
+	}
 
 	paramValue = this->utilTypes[typeIndex].utilParams[paramIndex].value;
 

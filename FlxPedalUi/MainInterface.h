@@ -40,19 +40,14 @@ private:
 	int rxDataSize = 0;
 	char txData[TX_DATA_SIZE];
 	int txDataSize = 0;
-
-	//string comboUiDataString;
 	Json::Value comboUiDataJson;
 
 public:
 	MainInterface();
 	virtual ~MainInterface();
-	int rxFifoFd;
-	int txFifoFd;
 
 	bool isDataReady();
 	string getTestComboUiData();
-	//string getComboUiData();
 	string sendUserRequestDataAndWaitForResponse(string userRequestData, int waitTime);
 	int sendUserRequestData(string userRequestData);
 	string getUserRequestResponse();

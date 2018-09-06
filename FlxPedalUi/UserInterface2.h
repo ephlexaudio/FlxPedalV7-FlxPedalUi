@@ -40,15 +40,11 @@
 
 using namespace std;
 
-
-
 class UserInterface2 {
 private:
 	GPIOClass initializePin(GPIOClass pin, int pinNumber, string direction);
 	int rotEncReadCount;
-	//int initializePin(GPIOClass *pin, int pinNumber, string direction);
 	void printPinData(GPIOClass pin);
-
 
 public:
 	UserInterface2();
@@ -60,9 +56,7 @@ public:
 	GPIOClass footswitchIn[2];
 	GPIOClass footswitchOut[2];
 	GPIOClass powerButton;
-	//GPIOClass powerOffSignal;
 	GPIOClass inputCoupling[3];
-	//GPIOClass spiTest[3];
 	SPI spi;
 
 	int readButtons();
@@ -74,7 +68,6 @@ public:
 	void writeLcdLine(int lineNumber, char *lineString);
 	void powerOff();
 	void spiBitBangTest();
-	//void initializeLcd(void);
 };
 
 #endif /* USERINTERFACE_H_ */

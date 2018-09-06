@@ -45,11 +45,6 @@ Effect::~Effect() {
 
 void Effect::addParameter(Json::Value paramDataJson)
 {
-	/*string name = paramDataJson["name"].asString();
-	string abbr = paramDataJson["abbr"].asString();
-	int valueIndex = paramDataJson["value"].asInt();
-	int type = paramDataJson["type"].asInt();*/
-
 	this->parameters.push_back(Parameter(paramDataJson));
 }
 
@@ -66,10 +61,6 @@ string Effect::getAbbr()
 vector<Parameter> Effect::getParamSoftKeyElements(int startIndex)
 {
 	vector<Parameter> params;
-	/*int paramCount = this->parameters.size()-4*startIndex;
-
-	if(paramCount > 4) paramCount = 4;
-	else if(paramCount < 0) paramCount = this->parameters.size();*/
 
 	if(this->parameters.size() > startIndex)
 	{
@@ -92,10 +83,6 @@ vector<Parameter> Effect::getParams(int startIndex)
 
 
 	vector<Parameter> params;
-	/*int paramCount = this->parameters.size()-4*startIndex;
-
-	if(paramCount > 4) paramCount = 4;
-	else if(paramCount < 0) paramCount = this->parameters.size();*/
 
 	if(this->parameters.size() > startIndex)
 	{
@@ -147,7 +134,7 @@ void Effect::updateParameter(int index, int direction)
 	cout << "********** ENTERING Effect::setParameter: " << index << endl;
 #endif
 
-	this->parameters[index].updateValueIndex(direction); //.setValueIndex(value);
+	this->parameters[index].updateValueIndex(direction);
 
 #if(dbg >= 1)
 	cout << "********** EXITING Effect::setParameter: "  << endl;
@@ -165,8 +152,3 @@ int Effect::getParamCount()
 #endif
 	return this->parameters.size();
 }
-/*int Effect::getParameterValueIndex(int parameterIndex)
-{
-
-}*/
-
