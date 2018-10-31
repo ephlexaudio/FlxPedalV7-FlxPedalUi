@@ -1,5 +1,5 @@
 /*
- * SharedMemoryInt.cpp
+ * SPI.cpp
  *
  *  Created on: Mar 20, 2016
  *      Author: mike
@@ -15,17 +15,11 @@ using namespace std;
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-static const char *device0 = "/dev/spidev0.0";
-static uint8_t mode = 0;
-static uint8_t bits = 8;
-static uint32_t speed = 100000;
-
-int spiFD;
 
 SPI::SPI()
 {
 	this->status = 0;
-	char tempStr[5];
+
 #if(!OPEN_TRANSFER_CLOSE)
 	int ret;
 	cout << "opening device: " << device0 << endl;
@@ -141,38 +135,42 @@ SPI::~SPI()
 
 
 #define dbg 0
-uint8_t SPI::sendData(char *data, unsigned int length)
+uint8_t SPI::sendData(char *data, int length)
 {
 #if(dbg >= 1)
 	cout << "***** ENTERING: SPI::sendData" << endl;
 #endif
-	int ret;
-
 
 	uint8_t status = 0;
+	char txBuffer[SPI_TX_BUFFER_SIZE];
+	char rxBuffer[SPI_RX_BUFFER_SIZE];
+	clearBuffer(txBuffer,SPI_TX_BUFFER_SIZE);
+	clearBuffer(rxBuffer,SPI_RX_BUFFER_SIZE);
 
-	for(int i = 0; i < TX_BUFFER_SIZE; i++) this->txBuffer[i] = 0;
-
-	for(int i = 0; i < RX_BUFFER_SIZE; i++) this->rxBuffer[i] = 0;
-
-	strncpy(this->txBuffer, data, 22);
+	strncpy(txBuffer, data, 22);
 	struct spi_ioc_transfer spi;
 
 #if(dbg >= 1)
 	cout << "file length: " << length << endl;
 	cout << "sendData data: " << data << endl;
+	cout << "this->txBuffer: ";
+	for(int i = 0; i < SPI_TX_BUFFER_SIZE; i++)
+	{
+		cout << (int)this->txBuffer[i] << "," << endl;
+	}
 #endif
 
 
-	spi.tx_buf        = (unsigned long)(this->txBuffer); // transmit from "txBuffer"
-	spi.rx_buf        = (unsigned long)(this->rxBuffer); // receive into "rxBuffer"
-	spi.len           = ARRAY_SIZE(this->txBuffer);
+	spi.tx_buf        = (unsigned long)(txBuffer); // transmit from "txBuffer"
+	spi.rx_buf        = (unsigned long)(rxBuffer); // receive into "rxBuffer"
+	spi.len           = ARRAY_SIZE(txBuffer);
 	spi.delay_usecs   = 50;
 	spi.speed_hz      = speed;
 	spi.bits_per_word = bits;
 	spi.cs_change = 0;
 	spi.tx_nbits = 0;
 	spi.rx_nbits = 0;
+	spi.pad = 0;
 
 	errno = 0;
 	status = ioctl(spiFD, SPI_IOC_MESSAGE(1), &spi) ;
@@ -208,14 +206,16 @@ uint8_t SPI::getData(char *data, uint16_t length)
 #if(dbg >= 2)
 	cout << "address: " << address << endl;
 #endif
+	char txBuffer[SPI_TX_BUFFER_SIZE];
+	char rxBuffer[SPI_RX_BUFFER_SIZE];
+	clearBuffer(txBuffer,SPI_TX_BUFFER_SIZE);
+	clearBuffer(rxBuffer,SPI_RX_BUFFER_SIZE);
 
 	struct spi_ioc_transfer spi;
-	for(int i = 0; i < TX_BUFFER_SIZE; i++) this->txBuffer[i] = 0;
-	for(int i = 0; i < RX_BUFFER_SIZE; i++) this->rxBuffer[i] = 0;
 
 
-	spi.tx_buf        = (unsigned long)(this->txBuffer); // transmit from "txBuffer"
-	spi.rx_buf        = (unsigned long)(this->rxBuffer); // receive into "rxBuffer"
+	spi.tx_buf        = (unsigned long)(txBuffer); // transmit from "txBuffer"
+	spi.rx_buf        = (unsigned long)(rxBuffer); // receive into "rxBuffer"
 	spi.len           = length;
 	spi.delay_usecs   = 30;
 	spi.speed_hz      = speed;
@@ -225,6 +225,8 @@ uint8_t SPI::getData(char *data, uint16_t length)
 	spi.rx_nbits = 0;
 	spi.pad = 0;
 
+	errno = 0;
+	status = ioctl(spiFD, SPI_IOC_MESSAGE(1), &spi) ;
 
 #if(dbg >= 2)
 	puts((const char*)(data));

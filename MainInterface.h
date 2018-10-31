@@ -22,48 +22,72 @@
 
 #include <linux/types.h>
 #include <signal.h>
+#include <cstdlib>
 #include <string>
 #include <cstring>
+#include <sstream>
 #include <iostream>
+#include <sys/mman.h>
 #include <json/json.h>
 #include "Utilities.h"
 #include "structs.h"
 
 using namespace std;
 
-#define RX_DATA_SIZE 1000
+#define RX_DATA_SIZE 2000
 #define TX_DATA_SIZE 100
+
+
 
 class MainInterface {
 private:
-	char rxData[RX_DATA_SIZE];
-	int rxDataSize = 0;
-	char txData[TX_DATA_SIZE];
-	int txDataSize = 0;
+
+	const char* rxFifoPath = "/home/pedalUiRx";
+	const char* txFifoPath = "/home/pedalUiTx";
+	int rxFifoFd;
+	int txFifoFd;
+
 	Json::Value comboUiDataJson;
+	//******IPC stuff ******
+	struct _ipcData {
+		int change;
+		string comboName;
+		string currentStatus;
+		bool usbPortOpen;
+		bool hostGuiActive;
+		int exit;
+	};
+	char fromMainIntName[50];
+	char toMainIntName[50];
+	int fromMainIntFD;
+	int toMainIntFD;
+	int shmData[10];
+	char commandString[100];
+	struct _ipcData *fromMainIntMemory;
+	struct _ipcData *toMainIntMemory;
+	int openFlxMainComm(void);
+	int closeFlxMainComm(void);
 
 public:
 	MainInterface();
-	virtual ~MainInterface();
+	~MainInterface();
 
-	bool isDataReady();
-	string getTestComboUiData();
 	string sendUserRequestDataAndWaitForResponse(string userRequestData, int waitTime);
 	int sendUserRequestData(string userRequestData);
-	string getUserRequestResponse();
 
 	vector<string>listCombos();
 	string getComboUiData(string comboName);
-	int changeComboParamValue(int paramIndex, int valueIndex);
+	int changeComboParamValue(ControlParameterPair controlParameterPair, int valueIndex);
 	int saveCombo();
 
 	string getFlxUtilityData();
-	int changeFlxUtilityValue(string utilParamString, float utilValue);
+	int changeFlxUtilityValue(string utilParamString, double utilValue);
+	int changeFlxUtilityValue(string utilParamString, int utilValue);
+	int changeFlxUtilityValue(string utilParamString, string utilParamOption);
 	int saveFlxUtilityData();
 
-	PedalStatus getCurrentStatus(string activeInterface);
-	PedalStatus getCurrentStatus();
-	PedalStatus parseCurrentStatusString(string statusString);
+	PedalStatus readFlxMain(void);
+
 };
 
 #endif /* MAININTERFACE_H_ */

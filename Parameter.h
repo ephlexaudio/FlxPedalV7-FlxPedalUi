@@ -31,23 +31,24 @@ class Parameter {
 private:
 	string name;
 	string abbr;
-	int valueIndex;
 	int paramType;
 	int paramIndex;
+	string parentControl;
+	int parentControlIndex;
+	int valueIndex;
 public:
 	Parameter();
-	Parameter(string name, string abbr, int valueIndex, int type);
+	Parameter(string name, string abbr, int valueIndex, int type,int parentControlIndex);
 	Parameter(Json::Value paramDataJson);
-	virtual ~Parameter();
+	~Parameter();
 
 	void setName(string name);
 	void setAbbr(string abbr);
 	string getName();
 	string getAbbr();
+	ControlParameterPair getControlParameterPair();
 	int getValueType();
 	int getValueIndex();
-	int getParamIndex();
-	void setValueIndex(int value);
 	void updateValueIndex(int direction);
 
 };

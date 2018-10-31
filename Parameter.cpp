@@ -8,10 +8,15 @@
 #include "Parameter.h"
 
 Parameter::Parameter(){
-
+	this->name = "";
+	this->abbr = "";
+	this->valueIndex = 0;
+	this->paramType = 0;
+	this->paramIndex = 0;
+	this->parentControlIndex = 0;
 }
 
-Parameter::Parameter(string name, string abbr, int valueIndex, int type) {
+Parameter::Parameter(string name, string abbr, int valueIndex, int type, int parentControlIndex) {
 	// TODO Auto-generated constructor stub
 	this->name = name;
 	this->abbr = abbr;
@@ -21,20 +26,30 @@ Parameter::Parameter(string name, string abbr, int valueIndex, int type) {
 	}
 	this->valueIndex = valueIndex;
 	this->paramType = type;
+	this->paramIndex = 0;
+	this->parentControlIndex = parentControlIndex;
 }
 
+#define dbg 0
 Parameter::Parameter(Json::Value paramDataJson)
 {
+#if(dbg >= 1)
+	cout << "********** ENTERING Parameter::Parameter: " << endl;
+#endif
 	this->name = paramDataJson["name"].asString();
 	this->abbr = paramDataJson["abbr"].asString();
-	while(this->abbr.size()<4)
+	while(this->abbr.size()<4)  // make abbr 4 characters to make all abbrs align for LCD softkeys.
 	{
 		this->abbr += " ";
 	}
-
+	this->parentControl = paramDataJson["parentControl"].asString();
 	this->valueIndex = paramDataJson["value"].asInt();
 	this->paramType = paramDataJson["paramType"].asInt();
+	this->parentControlIndex = paramDataJson["ctrlIndx"].asInt();
 	this->paramIndex = paramDataJson["index"].asInt();
+#if(dbg >= 1)
+	cout << "********** EXITING Parameter::Parameter: "  << endl;
+#endif
 }
 
 Parameter::~Parameter() {
@@ -65,19 +80,21 @@ string Parameter::getAbbr()
 	return this->abbr;
 }
 
+
+ControlParameterPair Parameter::getControlParameterPair()
+{
+
+	ControlParameterPair  controlParamPair;
+
+	controlParamPair.parentControl = this->parentControl;
+	controlParamPair.parameter = this->name;
+
+	return controlParamPair;
+}
+
 int Parameter::getValueIndex()
 {
 	return this->valueIndex;
-}
-
-int Parameter::getParamIndex()
-{
-	return this->paramIndex;
-}
-
-void Parameter::setValueIndex(int value)
-{
-	this->valueIndex = value;
 }
 
 
@@ -100,4 +117,3 @@ void Parameter::updateValueIndex(int direction)
 #endif
 
 }
-

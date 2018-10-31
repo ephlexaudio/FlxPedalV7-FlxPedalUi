@@ -1,5 +1,5 @@
 /*
- * SharedMemoryInt.h
+ * SPI.h
  *
  *  Created on: Mar 20, 2016
  *      Author: mike
@@ -24,21 +24,24 @@
 #include <sys/stat.h>
 
 #include "config.h"
-#include "GPIOClass.h"
 
 
 class SPI
 {
+private:
+	uint8_t status;
+	const char *device0 = "/dev/spidev0.0";
+	uint8_t mode = 0;
+	uint8_t bits = 8;
+	uint32_t speed = 100000;
+
+	int spiFD;
+
 public:
 	SPI();
 	~SPI();
 
-private:
-	char txBuffer[TX_BUFFER_SIZE];
-	char rxBuffer[RX_BUFFER_SIZE];
-public:
-	uint8_t status;
-	uint8_t sendData(char *data, unsigned int length);
+	uint8_t sendData(char *data, int length);
 	uint8_t getData(char *data, uint16_t length);
 
 };

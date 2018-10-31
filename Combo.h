@@ -38,13 +38,12 @@ private:
 	vector<Effect> effects;
 public:
 	Combo();
-	virtual ~Combo();
+	~Combo();
 
 
 	int getCombo(string comboUiData);
 	string getName();
-	void addEffect(Json::Value effectDataJson);
-	vector<Effect> getEffectSoftKeyElements();
+	vector<string> getEffectSoftKeyAbbrs();
 	vector<Effect> getEffects();
 	Effect getEffect(int effectIndex);
 	void updateParameter(int effectIndex, int parameterIndex, int direction);

@@ -23,6 +23,11 @@
 
 using namespace std;
 
+struct ControlParameterPair
+{
+	string parentControl;
+	string parameter;
+};
 struct SoftKeyElement{
 	string name;
 	string abbr;
@@ -30,9 +35,51 @@ struct SoftKeyElement{
 };
 
 struct PedalStatus{
-	int globalComboIndex;
-	int hostGuiActive;
-	char currentStatus[20];
+	string comboName;
+	string currentStatus;
+	bool usbPortOpen;
+	bool hostGuiActive;
+};
+
+struct DblStr {
+	double value;
+	string option;
+};
+
+
+struct UtilDoubleValue {
+	double value;
+	double minimum;
+	double maximum;
+};
+
+struct UtilIntValue {
+	int value;
+	int minimum;
+	int maximum;
+};
+
+struct UtilOption {
+	string option;
+	vector<string> validOptions;
+};
+
+
+
+struct UtilParam{
+	string name;
+	string abbr;
+	int utilParamIndex;
+	int paramType; //0=Double, 1=String Option
+	UtilOption	option;
+	UtilIntValue intValue;
+	UtilDoubleValue doubleValue;
+};
+
+struct UtilType{
+	string name;
+	string abbr;
+	vector<UtilParam> utilParams;
 };
 
 #endif /* STRUCTS_H_ */

@@ -19,7 +19,7 @@
 #include <time.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
-
+#include <algorithm>
 #include <linux/types.h>
 #include <signal.h>
 #include <string>
@@ -29,7 +29,7 @@
 
 using namespace std;
 
-extern "C" void clearBuffer(char *buffer, int bufferSize);
+void clearBuffer(char *buffer, int bufferSize);
 void pabort(const char *s);
 
 

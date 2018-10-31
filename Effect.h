@@ -36,18 +36,18 @@ private:
 	Json::Value effectDataJson;
 	vector<Parameter> parameters;
 public:
-	Effect(string name, string abbr);
 	Effect(Json::Value effectJsonData);
-	virtual ~Effect();
+	~Effect();
 
-	void addParameter(Json::Value paramDataJson);
-	string getName();
+	void addParameter(Json::Value parameterDataJson);
 	string getAbbr();
-	vector<Parameter> getParamSoftKeyElements(int startIndex);
-	vector<Parameter> getParams(int startIndex);
-	Parameter getParam(int paramIndex);
+	string getName();
+	vector<string> getParamSoftKeyAbbrs();
+	Parameter getParameter(int paramIndex);
+	ControlParameterPair getControlParameterPair(int paramIndex);
 	void updateParameter(int index, int direction);
 	int getParamCount();
+
 
 };
 

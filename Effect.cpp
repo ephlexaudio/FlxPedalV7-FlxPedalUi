@@ -7,22 +7,14 @@
 
 #include "Effect.h"
 
-#include "Parameter.h"
 
-Effect::Effect(string name, string abbr) {
-	// TODO Auto-generated constructor stub
-	this->name = name;
-	this->abbr = abbr;
-	while(this->abbr.size()<4)
-	{
-		this->abbr += " ";
-	}
-	this->parameters.clear();
-
-}
-
+#define dbg 0
 Effect::Effect(Json::Value effectJsonData)
 {
+#if(dbg >= 1)
+	cout << "********** ENTERING Effect::Effect: " << endl;
+#endif
+
 	this->name = effectJsonData["name"].asString();
 	this->abbr = effectJsonData["abbr"].asString();
 	while(this->abbr.size()<4)
@@ -31,26 +23,40 @@ Effect::Effect(Json::Value effectJsonData)
 	}
 	this->parameters.clear();
 
-	int paramCount = effectJsonData["params"].size();
-	for(int i = 0; i < paramCount; i++)
+
+	for(auto & paramJson : effectJsonData["params"])
 	{
-		Parameter param = Parameter(effectJsonData["params"][i]);
-		this->parameters.push_back(param);
+		Parameter control = Parameter(paramJson);
+		this->parameters.push_back(control);
 	}
+
+#if(dbg >= 2)
+
+	cout << "paramCount: " << this->parameters.size();
+#endif
+#if(dbg >= 1)
+	cout << "********** EXITING Effect::Effect: "  << endl;
+#endif
 }
 
 Effect::~Effect() {
 	// TODO Auto-generated destructor stub
 }
 
-void Effect::addParameter(Json::Value paramDataJson)
+#define dbg 0
+void Effect::addParameter(Json::Value parameterDataJson)
 {
-	this->parameters.push_back(Parameter(paramDataJson));
-}
+#if(dbg >= 1)
+	cout << "********** ENTERING Effect::addParameter: " << endl;
+#endif
+#if(dbg >= 2)
+	cout << "parameter name: " << parameterDataJson["name"].asString() << endl;
+#endif
 
-string Effect::getName()
-{
-	return this->name;
+	this->parameters.push_back(Parameter(parameterDataJson));
+#if(dbg >= 1)
+	cout << "********** EXITING Effect::addParameter: "  << endl;
+#endif
 }
 
 string Effect::getAbbr()
@@ -58,54 +64,32 @@ string Effect::getAbbr()
 	return this->abbr;
 }
 
-vector<Parameter> Effect::getParamSoftKeyElements(int startIndex)
+string Effect::getName()
 {
-	vector<Parameter> params;
-
-	if(this->parameters.size() > startIndex)
-	{
-		for(int i = startIndex;  (i < this->parameters.size()) && (i < startIndex+4); i++)
-		{
-			Parameter param = this->parameters[i];
-			params.push_back(param);
-		}
-	}
-
-	return params;
+	return this->name;
 }
 
-#define dbg 0
-vector<Parameter> Effect::getParams(int startIndex)
+vector<string> Effect::getParamSoftKeyAbbrs()
 {
 #if(dbg >= 1)
-	cout << "********** ENTERING Effect::getParams: " << startIndex << "," << this->parameters.size() << endl;
+	cout << "********** ENTERING Effect::getParamSoftKeyElements: " << startIndex << "," << this->parameters.size() << endl;
 #endif
+	vector<string> params;
 
-
-	vector<Parameter> params;
-
-	if(this->parameters.size() > startIndex)
+	for(auto & parameter : this->parameters)
 	{
-		for(int i = startIndex;  (i < this->parameters.size()) && (i < startIndex+4); i++)
-		{
-			Parameter param = this->parameters[i];
-			params.push_back(this->parameters[i]);
-#if(dbg >= 2)
-			cout << "getting parameter: " << i << endl;
-			cout << param.getName() << endl;
-#endif
-		}
+		string param = parameter.getAbbr();
+		params.push_back(param);
 	}
-
 #if(dbg >= 1)
-	cout << "********** EXITING Effect::getParams: " << this->parameters.size() << endl;
+	cout << "********** EXITING Effect::getParamSoftKeyElements: " << this->parameters.size() << endl;
 #endif
 
 	return params;
 }
 
 #define dbg 0
-Parameter Effect::getParam(int paramIndex)
+Parameter Effect::getParameter(int paramIndex)
 {
 #if(dbg >= 1)
 	cout << "********** ENTERING Effect::setParameter: " << index << endl;
@@ -127,20 +111,48 @@ Parameter Effect::getParam(int paramIndex)
 	return param;
 }
 
+#define dbg 0
+ControlParameterPair Effect::getControlParameterPair(int paramIndex)
+{
+#if(dbg >= 1)
+	cout << "********** ENTERING Effect::getControlParameterPair: " << paramIndex << endl;
+#endif
+	ControlParameterPair controlParamPair;
+
+	if(paramIndex < this->parameters.size())
+	{
+		controlParamPair = this->parameters[paramIndex].getControlParameterPair();
+	}
+	else
+	{
+		controlParamPair.parentControl = "";
+		controlParamPair.parameter = "";
+	}
+#if(dbg >= 1)
+	cout << "********** EXITING Effect::getControlParameterPair: " << endl;
+#endif
+#if(dbg >= 2)
+	cout << controlParamPair.parentControl << ":" << controlParamPair.parameter << endl;
+#endif
+
+	return controlParamPair;
+}
+
 
 void Effect::updateParameter(int index, int direction)
 {
 #if(dbg >= 1)
-	cout << "********** ENTERING Effect::setParameter: " << index << endl;
+	cout << "********** ENTERING Effect::updateParameter: " << index << endl;
 #endif
 
 	this->parameters[index].updateValueIndex(direction);
 
 #if(dbg >= 1)
-	cout << "********** EXITING Effect::setParameter: "  << endl;
+	cout << "********** EXITING Effect::updateParameter: "  << endl;
 #endif
 }
 
+#define dbg 1
 int Effect::getParamCount()
 {
 #if(dbg >= 1)

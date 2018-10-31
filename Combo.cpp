@@ -12,21 +12,23 @@ Combo::Combo() {
 
 }
 
+
 Combo::~Combo() {
 	// TODO Auto-generated destructor stub
 }
 
-#define dbg 1
+#define dbg 0
 int Combo::getCombo(string comboUiData)
 {
 #if(dbg >= 1)
 	cout << "********** ENTERING Combo::getCombo: " << endl;
 #endif
-#if(dbg >= 2)
+#if(dbg >= 3)
 	cout << "********** : " << comboUiData << endl;
 #endif
 
 	int status = 0;
+	int effectCount;
 
 	if(this->effects.empty() == false)
 	{
@@ -41,14 +43,15 @@ int Combo::getCombo(string comboUiData)
 			this->jsonReader.parse(comboUiData, this->comboDataJson);
 			this->name = this->comboDataJson["title"].asString();
 
-			int effectCount = this->comboDataJson["effects"].size();
-	#if(dbg >= 2)
+			effectCount = this->comboDataJson["effects"].size();
+
+	#if(dbg >= 3)
 		cout << this->comboDataJson.toStyledString() <<  endl;
 	#endif
 
-			for(int i = 0; i < effectCount; i++)
+			for(auto & effectJson : this->comboDataJson["effects"])
 			{
-				Effect effect = Effect(this->comboDataJson["effects"][i]);
+				Effect effect = Effect(effectJson);
 				this->effects.push_back(effect);
 			}
 		}
@@ -58,9 +61,11 @@ int Combo::getCombo(string comboUiData)
 			status = -1;
 		}
 	}
-
+#if(dbg >= 2)
+	cout << "effectCount: " << effectCount << endl;
+#endif
 #if(dbg >= 1)
-	cout << "********** EXITING Combo::getCombo: " << this->name <<  endl;
+	cout << "********** EXITING Combo::getCombo: " << this->name << "\t\t status:" << status <<  endl;
 #endif
 
 
@@ -74,10 +79,16 @@ string Combo::getName()
 }
 
 
-
-vector<Effect> Combo::getEffectSoftKeyElements()
+vector<string> Combo::getEffectSoftKeyAbbrs()
 {
-	return this->effects;
+	vector<string> softkeys;
+
+	for(auto & effect : this->effects)
+	{
+		softkeys.push_back(effect.getAbbr());
+	}
+
+	return softkeys;
 }
 
 vector<Effect> Combo::getEffects()
@@ -85,8 +96,17 @@ vector<Effect> Combo::getEffects()
 	return this->effects;
 }
 
+#define dbg 0
 Effect Combo::getEffect(int effectIndex)
 {
+#if(dbg >= 1)
+	cout << "********** ENTERING Combo::getEffect: " << endl;
+#endif
+
+#if(dbg >= 1)
+	cout << "********** EXITING Combo::getEffect: " << effectIndex <<  endl;
+#endif
+
 	return this->effects[effectIndex];
 }
 

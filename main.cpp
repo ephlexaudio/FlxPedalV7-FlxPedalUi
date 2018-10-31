@@ -18,32 +18,28 @@
 #include <fcntl.h>
 #include <linux/types.h>
 #include <signal.h>
+#include "config.h"
 #include "UserInterface2.h"
 #include "MainInterface.h"
 #include "Combo.h"
 #include "Utilities.h"
 #include "FlxUtility.h"
-#include "LookUpTable.h"
 
-#if(dbg >= 1)
-#endif
+
 
 using namespace std;
 
 static void signal_handler(int sig)
 {
+	cout << "signal received: " << sig <<", OfxPedal exiting ..." << endl;
 	signal(sig, SIG_DFL);
 	kill(getpid(),sig);
 }
 
-GPIOClass usbDetect = GPIOClass(USB_CONNECTED);
-bool isUsbConnected();
-int openUsbPort();
-UserInterface2 ui;
 
 
 
-#define dbg 0
+#define dbg 1
 int main(int argc, char *argv[])
 {
 	signal(SIGHUP, signal_handler);
@@ -67,41 +63,47 @@ int main(int argc, char *argv[])
 	signal(SIGVTALRM, signal_handler);
 	signal(SIGPROF, signal_handler);
 
+	Combo combo;
+	FlxUtility flxUtil;
+	MainInterface mainInt;
+	int menuLevelIndex[4];  // replacing effectIndex and paramIndex, so can be used with utility.
+	PedalStatus pedalStatus;
 	bool disableUsb = false;
+	UserInterface2 ui;
 
 	int status = 0;
 	int menuLevel = 0;
+	/* MENU LEVELS:
+	 * 0: Main menu
+	 * 1: Combo menu (effect softkeys) or Utility menu (Utility type softkeys)
+	 * 2: Combo menu (parameter softkeys) or Utility menu (parameter softkeys). Rotary encoder enabled.
+	 * 3: Utility menu (parameter options softkeys).
+	 */
+
 	bool exit = false;
 	bool uiChange = true;
-	int rotEncOutput = 0;
-	int rotEncValue = 0;
-	int rotEncReadCount = 0;
-	int poweroffButtonPushedCount = 0;
-	char menuLcdTempString[21];
-
-	int menuLevelIndex[2];  // replacing effectIndex and paramIndex, so can be used with utility.
 	menuLevelIndex[0] = 0;
 	menuLevelIndex[1] = 0;
+	int buttonPushed = -1;
+	bool mainUsbConnected = false;
 
-	int softKeyGroupIndex = 0;
+	int rotEncOutput = 0;
+	int rotEncReadCount = 0;
+	int poweroffButtonPushedCount = 0;
+	int timerLoopCount = 0;
+
+	int softKeyGroupIndex[2] = {0,0}; // 0= combo/utility parameter softkeys, 1=utility parameter option softkeys
 	bool hostUiActive = false;
 	int comboIndex = 0;
 	int comboUtilSelect = 0;
+	PedalStatus currentStatus;
 
-	int buttonPushed = -1;
 	string dataFromOfxMain;
+	string nonrequestDataFromOfxMain;
 	vector<string> comboNames;
-	vector<string> utilTypeNames;
-	vector<string> utilParamNames;
-	vector<Parameter> softKeyParams;
-	int paramValueType;
-	int paramValueIndex;
+	vector<string> softKeyAbbrs;
 	bool combosAvailable = true;
-	bool noCombos = false;
-	bool userRequestSentFlag = false;
 
-	usbDetect.export_gpio();
-	usbDetect.setdir_gpio("in");
 	char verString[20] = "";
 	if(argc > 1)
 	{
@@ -120,35 +122,34 @@ int main(int argc, char *argv[])
 
 
 	// initialize
-	MainInterface mainInt;
-	Combo combo;
-	FlxUtility flxUtil;
 	char version[6] = "";
 	FILE *versionFP = popen("cat /home/version","r");
 	fgets(version, 6, versionFP);
 	pclose(versionFP);
-	for(int i = 0; i < 5; i++)
+
+	for(auto & verChar : version)
 	{
-		if(version[i] < 46 || 57 < version[i])
+		if(verChar < 46 || 57 < verChar)
 		{
-			version[i] = 0;
+			verChar = 0;
 		}
 	}
 
-	snprintf(verString,20,"      V %s   ", version);
-	cout << "version: " << verString << endl;
-	ui.writeLcdLine(1,"                ");
-	ui.writeLcdLine(2,"   Ephlex Audio ");
-	ui.writeLcdLine(3,"      FLX-1     ");
-	ui.writeLcdLine(4,verString);
-	PedalStatus pedalStatus;
+	ui.writeLcdCentered("  ","Ephlex Audio","FLX-1","V"+string(version));
+	sleep(2);
 
+
+	/****************************************************************************
+	 * 		Get utility parameter list from FlxMain
+	 ****************************************************************************/
+
+	flxUtil.getFlxUtilityParams(mainInt.getFlxUtilityData());
 
 	/**************************************************************************
 	 * Get combo list and send first name of first combo to FlxMain process
 	 **************************************************************************/
 
-	for(int i = 0; comboNames.empty() == true && i < 5; i++)
+	for(int i = 0; comboNames.empty() == true ; i++)
 	{
 		comboNames = mainInt.listCombos();
 		usleep(100000);
@@ -157,38 +158,30 @@ int main(int argc, char *argv[])
 	if(comboNames.size() != 0)
 	{
 		combosAvailable = true;
-		cout << "combosAvailable: " << combosAvailable << endl;
+		cout << "combosAvailable: " << comboNames.size() << endl;
 		combo.getCombo(mainInt.getComboUiData(comboNames[comboIndex]));
 	}
 	else
 	{
 		combosAvailable = false;
-		cout << "combosAvailable: " << combosAvailable << endl;
-		ui.writeLcdLine(1,"No combos        ");
-		ui.writeLcdLine(2,"available        ");
-		ui.writeLcdLine(3,"                 ");
-		ui.writeLcdLine(4,"                 ");
+		ui.writeLcd("No combos","available",NULL,NULL);
 	}
 	uiChange = true;
 
-	/****************************************************************************
-	 * 		Get utility parameter list from FlxMain
-	 ****************************************************************************/
 
-	flxUtil.getFlxUtilityParams(mainInt.getFlxUtilityData());
+
 
 	//********************************** loop *********************************
 
 	while(exit == false)
 	{
+		pedalStatus = mainInt.readFlxMain();
+		//*********************** Power off ***********************************
 		if(ui.isPowerButtonPushed() == true)
 		{
 			if(poweroffButtonPushedCount == 0)
 			{
-				ui.writeLcdLine(1,"Keep power button");
-				ui.writeLcdLine(2,"pressed down to");
-				ui.writeLcdLine(3," power off");
-				ui.writeLcdLine(4,"              ");
+				ui.writeLcd("Keep power button","pressed down to"," power off","");
 			}
 
 			poweroffButtonPushedCount++;
@@ -203,7 +196,7 @@ int main(int argc, char *argv[])
 				exit = true;
 			}
 		}
-		else
+		else //*********************** UI loop *****************************************
 		{
 			if(poweroffButtonPushedCount > 0) // power button accidentally pushed, refresh LCD
 			{
@@ -212,774 +205,520 @@ int main(int argc, char *argv[])
 			}
 
 
-
+			//********* Connection mode: pedal (no connection) or host (USB connection)*******************************
+#if(DEBUG == 0)
+			if(pedalStatus.usbPortOpen == true && mainUsbConnected == false)
 			{
-				if(hostUiActive == true && isUsbConnected() == false)  // USB disconnected, get updated combo information
+				comboUtilSelect = 1;
+				mainUsbConnected = true;
+				cout << "changing pedal UI to utility mode." << endl;
+				uiChange = true;
+
+			}
+			else if(pedalStatus.usbPortOpen == false && mainUsbConnected == true)
+			{
+				comboUtilSelect = 0;
+				mainUsbConnected = false;
+				cout << "changing pedal UI to regular mode." << endl;
+				uiChange = true;
+			}
+#endif
+
+			if(combosAvailable == true)
+			{
+				if(rotEncReadCount < 10)  // this if/else code gives the encoder the ability to increment by speed
 				{
-					mainInt.getCurrentStatus("pedal");
-					comboUtilSelect = 0;
-					for(int i = 0; i < 5; i++)
-					{
-						comboNames = mainInt.listCombos();
-						if(comboNames.size() != 0)
-						{
-							combosAvailable = true;
-							combo.getCombo(mainInt.getComboUiData(comboNames[comboIndex]));
-							uiChange = true;
-							break;
-						}
-					}
+					ui.resetEncoder();
+					usleep(5000);
+					int value = ui.readEncoder();
+					rotEncOutput += value;
+					rotEncReadCount++;
 
-					if(comboNames.size() == 0)
-					{
-						combosAvailable = false;
-						ui.writeLcdLine(1,"No combos        ");
-						ui.writeLcdLine(2,"available        ");
-						ui.writeLcdLine(3,"                 ");
-						ui.writeLcdLine(4,"                 ");
 
-					}
-					hostUiActive = false;
 				}
-				else if(hostUiActive == false && isUsbConnected() == true)  // USB connected
+				else
 				{
-					openUsbPort();
-					mainInt.getCurrentStatus("host");
-					hostUiActive = true;
-					comboUtilSelect = 1;
-					uiChange = true;
-				}
+#if(dbg >= 2)
+					cout << "rotEncOutput: " << rotEncOutput << endl;
+#endif
+					rotEncReadCount = 0;
 
-				if(combosAvailable == true)
-				{
-					noCombos = false;
-					if(rotEncReadCount < 10)  // this if/else code gives the encoder the ability to increment by speed
+					/***********Split into two seperate menu branches: combo and utility *******/
+
+					buttonPushed = ui.readButtons();
+					if(buttonPushed >= 0)
 					{
-						ui.resetEncoder();
-						usleep(5000);
-						int value = ui.readEncoder();
-						rotEncOutput += value;
-						rotEncReadCount++;
-					}
-					else
-					{
-		#if(dbg >= 1)
-						cout << "rotEncOutput: " << rotEncOutput << endl;
-		#endif
-						rotEncReadCount = 0;
-
-						/***********Split into two seperate menu branches: combo and utility *******/
-
+						usleep(1000); // debounce
 						buttonPushed = ui.readButtons();
+					}
+
+					// read buttons and process accordingly
+					if(comboUtilSelect == 0)
+					{
 						if(buttonPushed >= 0)
-						{
-							usleep(1000); // debounce
-							buttonPushed = ui.readButtons();
-						}
-
-							// read buttons and process accordingly
-							if(comboUtilSelect == 0)
+						{// begin button block
+							if(buttonPushed == 0) // LCD left
 							{
-								{// begin button block
-									if(buttonPushed == 0) // LCD left
-									{
-		#if(dbg >= 2)
-										cout << "LCD left pushed" << endl;
-		#endif
-										switch(menuLevel)
-										{
-										case 0:
-											// send "get combo" command to OfxMain via FIFO
-												if(comboIndex > 0)
-												{
-													comboIndex--;
-												}
-												combo.getCombo(mainInt.getComboUiData(comboNames[comboIndex]));
-
-											break;
-										case 1:
-
-												menuLevelIndex[0] = 0;
-											menuLevel--;
-											break;
-										case 2:
-											if(softKeyGroupIndex > 0)  softKeyGroupIndex--;
-											else
-											{
-												softKeyGroupIndex = 0;
-													menuLevelIndex[1] = 0;
-												menuLevel--;
-											}
-											break;
-										case 3:
-											if(softKeyGroupIndex > 0)
-											{
-												softKeyGroupIndex--;
-											}
-											else
-											{
-												menuLevel--;
-											}
-
-											break;
-										default:;
-										}
-										uiChange = true;
-									}
-									else if(buttonPushed == 6) // LCD right
-									{
-										try
-										{
-			#if(dbg >= 2)
-											cout << "LCD right pushed" << endl;
-			#endif
-											switch(menuLevel)
-											{
-											case 0:
-												// send "get combo" command to OfxMain via FIFO
-												if(comboIndex < comboNames.size()-1)
-												{
-													comboIndex++;
-												}
-												combo.getCombo(mainInt.getComboUiData(comboNames[comboIndex]));
-												break;
-											case 1:
-												break;
-											case 2:
-													// only increment if there are more params to the right
-													if(4*(softKeyGroupIndex+1) < combo.getEffect(menuLevelIndex[0]).getParamCount())
-													{
-														softKeyGroupIndex++;
-													}
-												break;
-											case 3:
-													// only increment if there are more params to the right
-													if(4*(softKeyGroupIndex+1) < combo.getEffect(menuLevelIndex[0]).getParamCount())
-													{
-														softKeyGroupIndex++;
-													}
-												break;
-											default:;
-											}
-											uiChange = true;
-
-										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, LCD Right error: " << e.what() << endl;
-										}
-
-
-
-
-
-									}
-									else if(buttonPushed == 3) // Rotary encoder switch
-									{
-										switch(menuLevel)
-										{
-										case 0:
-											break;
-										case 1:
-												menuLevelIndex[0] = 0;
-											menuLevel--;
-											break;
-										case 2:
-											softKeyGroupIndex = 0;
-												menuLevelIndex[1] = 0;
-											menuLevel--;
-											break;
-										case 3:
-											menuLevel--;
-											break;
-										default:;
-										}
-										uiChange = true;
-									}
-									else if (buttonPushed >= 0)
-									{
-										try
-										{
-											int softkey = buttonPushed;
-											if(softkey > 3) softkey -= 2;
-											else softkey--;
-											cout << "FlxPedalUi: softkey1: " << softkey << endl;
-											switch(menuLevel)
-											{
-											case 0:
-												if(softkey == 0)
-												{
-													// send "save combo" command to OfxMain via FIFO
-													mainInt.saveCombo();
-												}
-												else if(softkey == 1)
-												{
-													menuLevel = 1;
-
-												}
-												else if(softkey == 2)
-												{
-													menuLevel = 1;
-													comboUtilSelect = 1;
-												}
-
-												break;
-											case 1:		// effects in softkeys
-													if(softkey < combo.getEffects().size())
-													{
-														menuLevelIndex[0] = softkey;
-														if(combo.getEffect(menuLevelIndex[0]).getParamCount() > 0)
-														{
-															menuLevel = 2;
-														}
-
-													}
-												break;
-											case 2:		// parameters in softkeys
-													if((4*softKeyGroupIndex+softkey) < combo.getEffect(menuLevelIndex[0]).getParamCount())
-													{
-														menuLevelIndex[1] = 4*softKeyGroupIndex+softkey;
-													}
-
-												break;
-											default:;
-											}
-											uiChange = true;
-
-										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, softkey error: " << e.what() << endl;
-										}
-
-									}
-
-								}// end button block
-
-									while(buttonPushed == ui.readButtons() && buttonPushed >= 0); // wait for button to be released
-
-
-
-								// update LCD
-								if(uiChange  && comboUtilSelect == 0)
+#if(dbg >= 2)
+								cout << "LCD left pushed: " <<  endl;
+#endif
+								switch(menuLevel)
 								{
-
-									cout << "FlxPedal: menuLevel1: " << menuLevel << endl;
-
-
-									switch(menuLevel)
-									{
 									case 0:
-										try
+										// send "get combo" command to OfxMain via FIFO
+										if(comboIndex > 0)
 										{
-											if(isUsbConnected() == false  || disableUsb == true)
-											{
-												snprintf(menuLcdTempString,20,"%s",combo.getName().c_str());
-												ui.writeLcdLine(1,menuLcdTempString);
-												snprintf(menuLcdTempString,20," Save Efx  Util");
-												ui.writeLcdLine(4,menuLcdTempString);
-											}
-											else
-											{
-												ui.writeLcdLine(1,"Connected to :");
-												ui.writeLcdLine(2,"Host          ");
-												snprintf(menuLcdTempString,20,"           Util");
-												ui.writeLcdLine(4,menuLcdTempString);
-
-											}
-
+											comboIndex--;
+											uiChange = true;
 										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, LCD menuLevel 0: " << e.what() << endl;
-										}
-
-
-
-
+										combo.getCombo(mainInt.getComboUiData(comboNames[comboIndex]));
 										break;
 									case 1:
-										try
-										{
-											snprintf(menuLcdTempString,20,"%s",combo.getName().c_str());
-											ui.writeLcdLine(1,menuLcdTempString);
-											clearBuffer(menuLcdTempString,21);
-											strcpy(menuLcdTempString, " ");
-											for(int effectIndex = 0; effectIndex < combo.getEffects().size(); effectIndex++)
-											{
-												strncat(menuLcdTempString, combo.getEffect(effectIndex).getAbbr().c_str(), 4);
-												strcat(menuLcdTempString, " ");
-											}
-											ui.writeLcdLine(4,menuLcdTempString);
-
-										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, LCD menuLevel 1: " << e.what() << endl;
-										}
+										menuLevelIndex[0] = 0;
+										menuLevel--;
+										uiChange = true;
 										break;
 									case 2:
-										try
+										if(softKeyGroupIndex[0] > 0)
 										{
-											snprintf(menuLcdTempString,20,"%s->%s",combo.getName().c_str(),
-													combo.getEffect(menuLevelIndex[0]).getName().c_str());
-											ui.writeLcdLine(1,menuLcdTempString);
+											softKeyGroupIndex[0]--;
+										}
+										else
+										{
+											softKeyGroupIndex[0] = 0;
+											menuLevelIndex[1] = 0;
+											menuLevel--;
+										}
+										uiChange = true;
+										break;
+									default:;
+								}
 
-											paramValueType = combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getValueType();
-											paramValueIndex = combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getValueIndex();
-											snprintf(menuLcdTempString,20,"%s: %s %s      ",
-													combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getName().c_str(),
-													lutArray[paramValueType][paramValueIndex].c_str(), lutArray[paramValueType][100].c_str());
-											ui.writeLcdLine(2,menuLcdTempString);
-											// send "value change" command to OfxMain via FIFO
-
-											clearBuffer(menuLcdTempString,21);
-											strcpy(menuLcdTempString, " ");
-											softKeyParams = combo.getEffect(menuLevelIndex[0]).getParams(4*softKeyGroupIndex);
-											for(int paramIndex = 0; paramIndex < softKeyParams.size(); paramIndex++)
+							}
+							else if(buttonPushed == 6) // LCD right
+							{
+								try
+								{
+#if(dbg >= 2)
+									cout << "LCD right pushed: " << comboUtilSelect << ":" << menuLevel << ":" << comboIndex <<  endl;
+#endif
+									switch(menuLevel)
+									{
+										case 0:
+											if(comboIndex+1 < comboNames.size())
 											{
-												strncat(menuLcdTempString, softKeyParams[paramIndex].getAbbr().c_str(), 4);
-												strcat(menuLcdTempString, " ");
+												// send "get combo" command to OfxMain via FIFO
+												comboIndex++;
+												string nextComboName = comboNames[comboIndex];
+												string nextComboJsonString = mainInt.getComboUiData(nextComboName);
+												combo.getCombo(nextComboJsonString);
+												uiChange = true;
 											}
 
-											ui.writeLcdLine(4,menuLcdTempString);
-										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, LCD menuLevel 2: " << e.what() << endl;
-										}
+											break;
+										case 1:
+											break;
+										case 2:
+											// only increment if there are more params to the right
+											if(4*(softKeyGroupIndex[0]+1) < combo.getEffect(menuLevelIndex[0]).getParamCount())
+											{
+												softKeyGroupIndex[0]++;
+											}
+											uiChange = true;
 
-										break;
-
-
-
-									default:;
+											break;
+										default:;
 									}
-									rotEncOutput = 0;
-									uiChange  = false;
-
 								}
-								else if(rotEncOutput != 0 && comboUtilSelect == 0) // read encoder
+								catch(std::exception &e)
 								{
-									if(menuLevel == 2)
+									cout << "comboUtilSelect=0, LCD Right error: " << e.what() << endl;
+								}
+							}
+							else if(buttonPushed == 3 ) // Rotary encoder switch
+							{
+								switch(menuLevel)
+								{
+									case 0:
+										break;
+									case 1:
+										menuLevelIndex[0] = 0;
+										mainInt.saveFlxUtilityData();
+										menuLevel--;
+										uiChange = true;
+										break;
+									case 2:
+										softKeyGroupIndex[0] = 0;
+										menuLevelIndex[1] = 0;
+										menuLevel--;
+										uiChange = true;
+										break;
+									default:;
+								}
+							}
+							else if (buttonPushed >= 0)  // soft keys
+							{
+								try
+								{
+									int softkey = 0;
+									softkey = buttonPushed;
+									// take rotary encoder out of softkeys
+									if(softkey > 3) softkey -= 2;
+									else softkey--;
+									Effect effect = combo.getEffect(menuLevelIndex[0]);
+									switch(menuLevel)
 									{
-										try
+										case 0:
+											if(softkey == 0)
+											{
+												// send "save combo" command to OfxMain via FIFO
+												mainInt.saveCombo();
+											}
+											else if(softkey == 1)
+											{
+												menuLevel = 1;
+												uiChange = true;
+											}
+											else if(softkey == 2)
+											{
+												menuLevel = 1;
+												uiChange = true;
+												comboUtilSelect = 1; // change LCD to display utilities
+											}
+											break;
+										case 1:		// effects in softkeys
+
+											if(softkey < combo.getEffects().size())
+											{
+
+												menuLevelIndex[0] = softkey;
+												if(effect.getParamCount() > 0)
+												{
+													menuLevel = 2;
+													uiChange = true;
+												}
+											}
+											break;
+										case 2:		// parameters in softkeys
+											if((4*softKeyGroupIndex[0]+softkey) < effect.getParamCount())
+											{
+												menuLevelIndex[1] = 4*softKeyGroupIndex[0]+softkey;
+											}
+											uiChange = true;
+											break;
+										default:;
+									}
+								}
+								catch(std::exception &e)
+								{
+									cout << "comboUtilSelect=0, softkey error: " << e.what() << endl;
+								}
+
+							}
+
+						}// end button block
+
+						while(buttonPushed == ui.readButtons() && buttonPushed >= 0); // wait for button to be released
+
+						// update LCD
+						if(comboUtilSelect == 0 && (uiChange || (menuLevel == 2 && rotEncOutput != 0)))
+						{
+							Effect effect = combo.getEffect(menuLevelIndex[0]);
+							Parameter param = effect.getParameter(menuLevelIndex[1]);
+							switch(menuLevel)
+							{
+								case 0:
+									try
+									{
+										ui.writeLcdHeader(menuLevel,combo.getName(),"");
+										ui.writeSoftKeys(0,vector<string>{"Save","Efx","Util"});
+									}
+									catch(std::exception &e)
+									{
+										cout << "comboUtilSelect=0, LCD menuLevel 0: " << e.what() << endl;
+									}
+									break;
+								case 1:
+									try
+									{
+										ui.writeLcdHeader(menuLevel,combo.getName(),"");
+										ui.writeSoftKeys(0,combo.getEffectSoftKeyAbbrs());
+									}
+									catch(std::exception &e)
+									{
+										cout << "comboUtilSelect=0, LCD menuLevel 1: " << e.what() << endl;
+									}
+									break;
+								case 2:
+									try
+									{
+										if(rotEncOutput == 0)
+										{
+											ui.writeLcdHeader(menuLevel,combo.getName(),effect.getName());
+											ui.writeLcdFxParameter(param);
+											ui.writeSoftKeys(softKeyGroupIndex[0],  effect.getParamSoftKeyAbbrs());
+										}
+										else
 										{
 											combo.updateParameter(menuLevelIndex[0],menuLevelIndex[1],rotEncOutput);
-
-											paramValueType = combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getValueType();
-											paramValueIndex = combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getValueIndex();
-											snprintf(menuLcdTempString,20,"%s: %s %s      ",
-													combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getName().c_str(),
-													lutArray[paramValueType][paramValueIndex].c_str(), lutArray[paramValueType][100].c_str());
-											ui.writeLcdLine(2,menuLcdTempString);
-											// send "value change" command to OfxMain via FIFO
-											mainInt.changeComboParamValue(combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getParamIndex(),
-													combo.getEffect(menuLevelIndex[0]).getParam(menuLevelIndex[1]).getValueIndex());
-
-											clearBuffer(menuLcdTempString,21);
-											strcpy(menuLcdTempString, " ");
-											softKeyParams = combo.getEffect(menuLevelIndex[0]).getParams(4*softKeyGroupIndex);
-											for(int paramIndex = 0; paramIndex < softKeyParams.size(); paramIndex++)
-											{
-												strncat(menuLcdTempString, softKeyParams[paramIndex].getAbbr().c_str(), 4);
-												strcat(menuLcdTempString, " ");
-											}
-											ui.writeLcdLine(4,menuLcdTempString);
-
-										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, LCD menuLevel 3 rotary: " << e.what() << endl;
+											mainInt.changeComboParamValue(effect.getControlParameterPair(menuLevelIndex[1]), param.getValueIndex());
+											ui.writeLcdFxParameter(param);
 										}
 									}
-									rotEncOutput = 0;
-									uiChange  = false;
-								}
-
-
+									catch(std::exception &e)
+									{
+										cout << "comboUtilSelect=0, LCD menuLevel 2: " << e.what() << endl;
+									}
+									break;
+								case 3:
+									try
+									{
+									}
+									catch(std::exception &e)
+									{
+										cout << "comboUtilSelect=0, LCD menuLevel 3: " << e.what() << endl;
+									}
+									break;
+								default:;
 							}
-							else if(comboUtilSelect == 1)
+							rotEncOutput = 0;
+							uiChange  = false;
+						}
+					}
+					else if(comboUtilSelect == 1)
+					{
+						if(buttonPushed == 0) // LCD left
+						{
+#if(dbg >= 2)
+							cout << "LCD left pushed" << endl;
+#endif
+							switch(menuLevel)
 							{
+								case 0:
+									break;
+								case 1:
+
+									menuLevelIndex[0] = 0;
+									mainInt.saveFlxUtilityData();
+									if(mainUsbConnected == false)
+									{
+										comboUtilSelect = 0;
+									}
+
+									menuLevel--;
+									break;
+								case 2:
+									if(softKeyGroupIndex[0] > 0)  softKeyGroupIndex[0]--;
+									else
+									{
+										softKeyGroupIndex[0] = 0;
+										menuLevelIndex[1] = 0;
+
+										menuLevel--;
+									}
+									break;
+								case 3:
+									if(softKeyGroupIndex[1] > 0)
+									{
+										softKeyGroupIndex[1]--;
+									}
+									else
+									{
+										softKeyGroupIndex[1] = 0;
+										menuLevelIndex[2] = 0;
+										menuLevel--;
+									}
+
+									break;
+								default:;
+							}
+							uiChange = true;
+						}
+						else if(buttonPushed == 6) // LCD right
+						{
+#if(dbg >= 2)
+							cout << "LCD right pushed: " << comboUtilSelect << ":" << menuLevel << ":" << comboIndex <<  endl;
+#endif
+							uiChange = true;
+						}
+						else if(buttonPushed == 3) // Rotary encoder switch
+						{
+							switch(menuLevel)
+							{
+								case 0:
+									// do nothing
+									break;
+								case 1:
+									menuLevelIndex[0] = 0;
+									mainInt.saveFlxUtilityData();
+									if(mainUsbConnected == false)
+									{
+										comboUtilSelect = 0;
+									}
+									menuLevel--;
+									break;
+								case 2:
+									softKeyGroupIndex[0] = 0;
+									menuLevelIndex[1] = 0;
+									menuLevel--;
+									break;
+								case 3:
+									softKeyGroupIndex[1] = 0;
+									menuLevelIndex[2] = 0;
+									menuLevel--;
+									break;
+								default:;
+							}
+							uiChange = true;
+						}
+						else if (buttonPushed >= 0) // softkeys
+						{
+							try
+							{
+								int softkey = buttonPushed;
+								if(softkey > 3) softkey -= 2;
+								else softkey--;
+
+								switch(menuLevel)
 								{
-									if(buttonPushed == 0) // LCD left
-									{
-		#if(dbg >= 2)
-										cout << "LCD left pushed" << endl;
-		#endif
-										switch(menuLevel)
-										{
-										case 0:
-											break;
-										case 1:
-
-												menuLevelIndex[0] = 0;
-												mainInt.saveFlxUtilityData();
-												if(isUsbConnected() == false || disableUsb == true)
-												{
-													comboUtilSelect = 0;
-												}
-
-											menuLevel--;
-											break;
-										case 2:
-											if(softKeyGroupIndex > 0)  softKeyGroupIndex--;
-											else
-											{
-
-												softKeyGroupIndex = 0;
-													menuLevelIndex[1] = 0;
-
-												menuLevel--;
-											}
-											break;
-										case 3:
-											if(softKeyGroupIndex > 0)
-											{
-												softKeyGroupIndex--;
-											}
-											else
-											{
-												menuLevel--;
-											}
-
-											break;
-										default:;
-										}
-										uiChange = true;
-									}
-									else if(buttonPushed == 6) // LCD right
-									{
-		#if(dbg >= 2)
-										cout << "LCD right pushed" << endl;
-		#endif
-										uiChange = true;
-									}
-									else if(buttonPushed == 3) // Rotary encoder switch
-									{
-										switch(menuLevel)
-										{
-										case 0:
-											break;
-										case 1:
-												menuLevelIndex[0] = 0;
-												mainInt.saveFlxUtilityData();
-												if(isUsbConnected() == false || disableUsb == true)
-												{
-													comboUtilSelect = 0;
-												}
-
-											menuLevel--;
-											break;
-										case 2:
-											softKeyGroupIndex = 0;
-												menuLevelIndex[1] = 0;
-											menuLevel--;
-											break;
-										case 3:
-											menuLevel--;
-											break;
-										default:;
-										}
-										uiChange = true;
-									}
-									else if (buttonPushed >= 0)
-									{
-										try
-										{
-											int softkey = buttonPushed;
-											if(softkey > 3) softkey -= 2;
-											else softkey--;
-
-											switch(menuLevel)
-											{
-											case 0:
-												if(softkey == 0)
-												{
-												}
-												else if(softkey == 1)
-												{
-													// should be no access to combo menus if host is connected
-													if(hostUiActive == false)
-													{
-														menuLevel = 1;
-														comboUtilSelect = 0;
-													}
-
-												}
-												else if(softkey == 2)
-												{
-													menuLevel = 1;
-												}
-
-
-												break;
-											case 1:		// utilities in softkeys
-
-												if(softkey < flxUtil.getFlxUtilityTypeVectorSize())
-												{
-													menuLevelIndex[0] = softkey;
-													menuLevel = 2;
-												}
-
-												break;
-											case 2:		// utility parameters in softkeys
-												if(4*softKeyGroupIndex+softkey < flxUtil.getFlxUtilityParamVectorSize(menuLevelIndex[0]))
-												{
-													menuLevelIndex[1] = softkey;
-												}
-
-												break;
-											default:;
-											}
-											uiChange = true;
-
-										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=1, softkey error: " << e.what() << endl;
-
-										}
-
-									}
-								}
-								while(buttonPushed == ui.readButtons() && buttonPushed >= 0); // wait for button to be released
-
-								// update LCD
-								if(uiChange && comboUtilSelect == 1)
-								{
-									switch(menuLevel)
-									{
 									case 0:
-										try
+										if(softkey == 2)
 										{
-											if(isUsbConnected() == false || disableUsb == true)
-											{
-												snprintf(menuLcdTempString,20,"%s",combo.getName().c_str());
-												ui.writeLcdLine(1,menuLcdTempString);
-												snprintf(menuLcdTempString,20," Save Efx  Util");
-												ui.writeLcdLine(4,menuLcdTempString);
-											}
-											else
-											{
-												ui.writeLcdLine(1,"Connected to :");
-												ui.writeLcdLine(2,"Host          ");
-												snprintf(menuLcdTempString,20,"           Util");
-												ui.writeLcdLine(4,menuLcdTempString);
-
-											}
-
+											menuLevel = 1;
 										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, LCD menuLevel 0: " << e.what() << endl;
-
-										}
-
 
 										break;
-									case 1:
-										try
-										{
-											snprintf(menuLcdTempString,20,"%s","util");
-											ui.writeLcdLine(1,menuLcdTempString);
-											clearBuffer(menuLcdTempString,21);
-											strcpy(menuLcdTempString, " ");
-											for(int utilTypeIndex = 0; utilTypeIndex < flxUtil.getFlxUtilityTypeVectorSize(); utilTypeIndex++)
-											{
-												strncat(menuLcdTempString, flxUtil.getFlxUtilityTypeAbbr(utilTypeIndex).c_str(), 4);
-												strcat(menuLcdTempString, " ");
-											}
-											ui.writeLcdLine(4,menuLcdTempString);
+									case 1:		// utilities in softkeys
 
-										}
-										catch(std::exception &e)
+										if(softkey < flxUtil.getFlxUtilityTypeVectorSize())
 										{
-											cout << "comboUtilSelect=0, LCD menuLevel 1: " << e.what() << endl;
-
+											menuLevelIndex[0] = softkey;
+											menuLevel = 2;
 										}
+
 										break;
-									case 2:
-										try
+									case 2:		// utility parameters in softkeys
+										if(4*softKeyGroupIndex[0]+softkey < flxUtil.getFlxUtilityParamVectorSize(menuLevelIndex[0]))
 										{
-											snprintf(menuLcdTempString,20,"%s->%s","util",flxUtil.getFlxUtilityTypeAbbr(menuLevelIndex[0]).c_str());
-											ui.writeLcdLine(1,menuLcdTempString);
-
-
-											clearBuffer(menuLcdTempString,21);
-											strcpy(menuLcdTempString, " ");
-
-											snprintf(menuLcdTempString,20,"%s %f       ",
-													flxUtil.getFlxUtilityParamName(menuLevelIndex[0], menuLevelIndex[1]).c_str(),
-													flxUtil.getFlxUtilityParamValue(menuLevelIndex[0], menuLevelIndex[1])
-													);
-											ui.writeLcdLine(2,menuLcdTempString);
-											clearBuffer(menuLcdTempString,21);
-											strcpy(menuLcdTempString, " ");
-											utilParamNames = flxUtil.getFlxUtilityParamAbbrList(menuLevelIndex[0]);
-											for(int utilParamIndex = 0; utilParamIndex < utilParamNames.size(); utilParamIndex++)
-											{
-												strncat(menuLcdTempString, utilParamNames[utilParamIndex].c_str(), 4);
-												strcat(menuLcdTempString, " ");
-											}
-											ui.writeLcdLine(4,menuLcdTempString);
-
+											menuLevelIndex[1] = softkey;
+											if(flxUtil.getFlxUtilityParamType(menuLevelIndex[0],menuLevelIndex[1]) == 0) menuLevel = 2;
+											else menuLevel = 3; // display options in softkeys
 										}
-										catch(std::exception &e)
-										{
-											cout << "comboUtilSelect=0, LCD menuLevel 2: " << e.what() << endl;
 
+										break;
+									case 3:  // utility parameter options may be in softkeys
+										if(4*softKeyGroupIndex[1]+softkey < flxUtil.getFlxUtilityParamOptionVectorSize(menuLevelIndex[0],menuLevelIndex[1]))
+										{
+											menuLevelIndex[2] = softkey+1; // menuLevelIndex[2] = 0 is equivalent to rotaryEnc = 0;
 										}
 										break;
 									default:;
-									}
-									rotEncOutput = 0;
-									uiChange  = false;
 								}
-								else if(rotEncOutput != 0 && comboUtilSelect == 1) // read encoder
-								{
+								uiChange = true;
 
-										if(menuLevel == 2)
-										{
-											try
-											{
-												flxUtil.changeFlxUtilityValue(menuLevelIndex[0], menuLevelIndex[1],rotEncOutput);
-
-												string typeName = flxUtil.getFlxUtilityTypeName(menuLevelIndex[0]);
-												string paramName = flxUtil.getFlxUtilityParamName(menuLevelIndex[0], menuLevelIndex[1]);
-												snprintf(menuLcdTempString,20,"%s %f       ", paramName.c_str(),
-															flxUtil.getFlxUtilityParamValue(menuLevelIndex[0], menuLevelIndex[1]));
-												ui.writeLcdLine(2,menuLcdTempString);
-													// send "util value change" command to OfxMain via FIFO
-												string typeParamName = flxUtil.getFlxUtilityTypeName(menuLevelIndex[0]) + "_"
-															+ flxUtil.getFlxUtilityParamName(menuLevelIndex[0],menuLevelIndex[1]);
-												mainInt.changeFlxUtilityValue(typeParamName,
-															flxUtil.getFlxUtilityParamValue(menuLevelIndex[0], menuLevelIndex[1]));
-												clearBuffer(menuLcdTempString,21);
-												strcpy(menuLcdTempString, " ");
-												for(int utilParamIndex = 0; utilParamIndex < utilParamNames.size(); utilParamIndex++)
-												{
-													strncat(menuLcdTempString, utilParamNames[utilParamIndex].c_str(), 4);
-													strcat(menuLcdTempString, " ");
-												}
-												ui.writeLcdLine(4,menuLcdTempString);
-											}
-											catch(std::exception &e)
-											{
-												cout << "comboUtilSelect=0, LCD menuLevel 3 rotary: " << e.what() << endl;
-
-											}
-										}
-										uiChange  = false;
-
-										rotEncOutput = 0;
-
-								}
+							}
+							catch(std::exception &e)
+							{
+								cout << "comboUtilSelect=1, softkey error: " << e.what() << endl;
 
 							}
 
-
+						}
 					}
-				}
-				else if(noCombos == false)
-				{
-					ui.writeLcdLine(1,"Connected to :");
-					ui.writeLcdLine(2,"Host          ");
-					noCombos = true;
-				}
-			}// blank
-		}// keep power on
-	}
-	char emptyLine[20];
+					while(buttonPushed == ui.readButtons() && buttonPushed >= 0); // wait for button to be released
 
-	return status;
-}
-
-
-int openUsbPort()
-{
-	char gadget[10] = "";
-	int osSelected = 0;
-	int buttonPushed = -1;
-
-	if(gadget[0] != 'g')
-	{
-
-		FILE *gadgetDetect = popen("ls /sys/kernel/config/usb_gadget/","r");
-		while((fgets(gadget,5,gadgetDetect)) != NULL);
-		pclose(gadgetDetect);
-	}
-
-	if(gadget[0] != 'g')
-	{
-
-		FILE *gadgetDetect = popen("ls /sys/kernel/config/usb_gadget/","r");
-		while((fgets(gadget,5,gadgetDetect)) != NULL);
-		pclose(gadgetDetect);
-
-
-		while(osSelected == 0 && isUsbConnected() == true)
-		{
-
-			ui.writeLcdLine(1,"Host PC Detected:");
-			ui.writeLcdLine(2," Select OS:     ");
-			ui.writeLcdLine(3,"                ");
-			ui.writeLcdLine(4," Win  Mac  Lin  ");
-
-			while(buttonPushed == -1 && isUsbConnected() == true)  // keeps LCD from flickering
-			{
-				buttonPushed = ui.readButtons();
-			}
-			if(buttonPushed >= 0)
-			{
-				usleep(500); // debounce
-				buttonPushed = ui.readButtons();
-				int osKeys = buttonPushed;
-				{
-					if(osKeys > 3) osKeys -= 2;
-					else osKeys--;
-
-					switch(osKeys)
+					// update LCD
+					if(comboUtilSelect == 1 && (uiChange ||(menuLevel == 2 && rotEncOutput != 0)))
 					{
-					case 0:		// Windows selected
-						osSelected = 1;
-						system("/root/AcmRndisUsbInit");
-						break;
-					case 1:		// Mac OS X selected
-						osSelected = 2;
-						system("/root/AcmEcmUsbInit");
-						break;
-					case 2:		// Linux selected
-						osSelected = 3;
-						system("/root/AcmEcmUsbInit");
-						break;
-					default:;
+
+						switch(menuLevel)
+						{
+							case 0:
+								try
+								{
+									ui.writeLcdWithSoftKeys("Connected to","Host","",vector<string>{"","","Util",""});
+								}
+								catch(std::exception &e)
+								{
+									cout << "comboUtilSelect=1, LCD menuLevel 0: " << e.what() << endl;
+								}
+								break;
+							case 1:
+								try
+								{
+									ui.writeLcdHeader(menuLevel,"Util","");
+									ui.writeSoftKeys(0,flxUtil.getFlxUtilityTypeAbbrList());
+								}
+								catch(std::exception &e)
+								{
+									cout << "comboUtilSelect=1, LCD menuLevel 1: " << e.what() << endl;
+								}
+								break;
+							case 2:
+								try
+								{
+
+										if(rotEncOutput == 0)
+										{
+											ui.writeLcdHeader(menuLevel,"Util",flxUtil.getFlxUtilityTypeName(menuLevelIndex[0]));
+											ui.writeLcdUtilParameter(flxUtil.getFlxUtilityUtilParameter(menuLevelIndex[0],menuLevelIndex[1]));
+
+											ui.writeSoftKeys(0,flxUtil.getFlxUtilityParamAbbrList(menuLevelIndex[0]));
+										}
+										else
+										{
+											flxUtil.changeFlxUtilityValue(menuLevelIndex[0], menuLevelIndex[1],rotEncOutput);
+											// send "util value change" command to OfxMain via FIFO
+											string typeParamName = flxUtil.getFlxUtilityTypeName(menuLevelIndex[0]) + "_"
+															+ flxUtil.getFlxUtilityParamName(menuLevelIndex[0],menuLevelIndex[1]);
+											mainInt.changeFlxUtilityValue(typeParamName,
+													flxUtil.getFlxUtilityParamValue(menuLevelIndex[0], menuLevelIndex[1]).value);
+											ui.writeLcdUtilParameter(flxUtil.getFlxUtilityUtilParameter(menuLevelIndex[0], menuLevelIndex[1]));
+										}
+								}
+								catch(std::exception &e)
+								{
+									cout << "comboUtilSelect=1, LCD menuLevel 2: " << e.what() << endl;
+								}
+								break;
+							case 3:
+								try
+								{
+										if(menuLevelIndex[2] == 0)
+										{
+											ui.writeLcdHeader(menuLevel,"Util",flxUtil.getFlxUtilityTypeName(menuLevelIndex[0]));
+											ui.writeLcdUtilParameter(flxUtil.getFlxUtilityUtilParameter(menuLevelIndex[0], menuLevelIndex[1]));
+
+											ui.writeSoftKeys(0,flxUtil.getFlxUtilityParamOptionAbbrList(menuLevelIndex[0], menuLevelIndex[1]));
+										}
+										else
+										{
+											flxUtil.changeFlxUtilityValue(menuLevelIndex[0], menuLevelIndex[1],menuLevelIndex[2]);
+											// send "util value change" command to OfxMain via FIFO
+											string typeParamName = flxUtil.getFlxUtilityTypeName(menuLevelIndex[0]) + "_"
+															+ flxUtil.getFlxUtilityParamName(menuLevelIndex[0],menuLevelIndex[1]);
+											mainInt.changeFlxUtilityValue(typeParamName,
+													flxUtil.getFlxUtilityParamValue(menuLevelIndex[0], menuLevelIndex[1]).option);
+											ui.writeLcdUtilParameter(flxUtil.getFlxUtilityUtilParameter(menuLevelIndex[0], menuLevelIndex[1]));
+
+										}
+
+								}
+								catch(std::exception &e)
+								{
+									cout << "comboUtilSelect=1, LCD menuLevel 2: " << e.what() << endl;
+								}
+								break;
+							default:;
+						}
+						menuLevelIndex[2] = 0;
+						rotEncOutput = 0;
+						uiChange  = false;
 					}
 				}
 			}
-		}
-	}
-
-}
-
-
-
-#define dbg 0
-bool isUsbConnected()
-{
-
-	bool status = false;
-	int usbLine = 0;
-#if(dbg >= 1)
-	cout << "********** ENTERING FlxPedalUi:main:isUsbConnected: " <<  endl;
-#endif
-
-	usbDetect.getval_gpio(usbLine);
-	if(usbLine == 1) status = true;
-
-#if(dbg >= 1)
-	cout << "********** EXITING FlxPedalUi:main::isUsbConnected: " << status << endl;
-#endif
+		}// blank
+	}// keep power on
 
 	return status;
 }

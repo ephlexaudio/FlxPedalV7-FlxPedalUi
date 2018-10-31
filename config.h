@@ -8,9 +8,9 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-
-#define TX_BUFFER_SIZE 22
-#define RX_BUFFER_SIZE 22
+#define DEBUG 0
+#define SPI_TX_BUFFER_SIZE 22
+#define SPI_RX_BUFFER_SIZE 22
 #define LCD_LINE_WRITE_SPACING 80000 //was 30000 microseconds, using usleep()
 
 
