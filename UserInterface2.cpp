@@ -5,14 +5,18 @@
  *      Author: buildrooteclipse
  */
 
-#include "config.h"
+
 
 #include "UserInterface2.h"
 #include "LookUpTable.h"
+//#include "config.h"
+
+
+namespace std
+{
 
 
 
-using namespace std;
 UserInterface2::UserInterface2() {
 	// TODO Auto-generated constructor stub
 
@@ -59,7 +63,7 @@ GPIOClass UserInterface2::initializePin(GPIOClass pin, int pinNumber, string dir
 #if(dbg >= 1)
 	cout << "********** EXITING UserInterface2::initializePin: " << status << endl;
 #endif
-	if(status == -1) pin = NULL;
+	if(status == -1) pin = 0;
 	return pin;
 }
 
@@ -274,7 +278,7 @@ void UserInterface2::writeLcdHeader(int menuLevel, string title, string subtitle
 
 }
 
-
+#define dbg 1
 void UserInterface2::writeLcdFxParameter(Parameter parameter)
 {
 #if(dbg >= 1)
@@ -300,14 +304,14 @@ void UserInterface2::writeLcdFxParameter(Parameter parameter)
 
 }
 
-#define dbg 0
+#define dbg 2
 void UserInterface2::writeLcdUtilParameter(UtilParam parameter)
 {
 #if(dbg >= 1)
 	cout << "********** ENTERING UserInterface2::writeLcdUtilParameter: "  << endl;
 #endif
 #if(dbg >= 2)
-	cout << parameter.name << ":" << parameter.option.option << endl;
+	cout << parameter.name << ":" << parameter.paramType << ":" << parameter.option.option << endl;
 #endif
 	try
 	{
@@ -350,7 +354,7 @@ void UserInterface2::writeSoftKeys(int startIndex, vector<string> softKeyAbbrs)
 	{
 		while(softKeyAbbrs.size() < 4) softKeyAbbrs.push_back(string(""));
 
-		for(int paramIndex = 0; (4*startIndex+paramIndex) < softKeyAbbrs.size() && (paramIndex < 4); paramIndex++)
+		for(int paramIndex = 0; (4*startIndex+paramIndex) < static_cast<int>(softKeyAbbrs.size()) && (paramIndex < 4); paramIndex++)
 		{
 			keys.push_back(softKeyAbbrs[4*startIndex + paramIndex]);
 		}
@@ -466,3 +470,4 @@ string UserInterface2::centeredString(string text, int totalStringLength)
 	return centeredText;
 }
 
+}

@@ -7,6 +7,10 @@
 
 #include "Effect.h"
 
+namespace std
+{
+
+
 
 #define dbg 0
 Effect::Effect(Json::Value effectJsonData)
@@ -89,7 +93,7 @@ vector<string> Effect::getParamSoftKeyAbbrs()
 }
 
 #define dbg 0
-Parameter Effect::getParameter(int paramIndex)
+Parameter Effect::getParameter(unsigned int paramIndex)
 {
 #if(dbg >= 1)
 	cout << "********** ENTERING Effect::setParameter: " << index << endl;
@@ -112,7 +116,7 @@ Parameter Effect::getParameter(int paramIndex)
 }
 
 #define dbg 0
-ControlParameterPair Effect::getControlParameterPair(int paramIndex)
+ControlParameterPair Effect::getControlParameterPair(unsigned int paramIndex)
 {
 #if(dbg >= 1)
 	cout << "********** ENTERING Effect::getControlParameterPair: " << paramIndex << endl;
@@ -139,7 +143,7 @@ ControlParameterPair Effect::getControlParameterPair(int paramIndex)
 }
 
 
-void Effect::updateParameter(int index, int direction)
+void Effect::updateParameter(unsigned int index, int direction)
 {
 #if(dbg >= 1)
 	cout << "********** ENTERING Effect::updateParameter: " << index << endl;
@@ -163,4 +167,5 @@ int Effect::getParamCount()
 	cout << "********** EXITING Effect::getParamCount: " << this->parameters.size()  << endl;
 #endif
 	return this->parameters.size();
+}
 }

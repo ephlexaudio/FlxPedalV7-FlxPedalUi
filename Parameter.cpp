@@ -7,6 +7,11 @@
 
 #include "Parameter.h"
 
+namespace std
+{
+
+
+
 Parameter::Parameter(){
 	this->name = "";
 	this->abbr = "";
@@ -116,4 +121,5 @@ void Parameter::updateValueIndex(int direction)
 	cout << "********** EXITING Parameter::updateValueIndex: " << this->valueIndex << endl;
 #endif
 
+}
 }

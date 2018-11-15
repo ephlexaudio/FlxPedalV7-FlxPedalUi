@@ -25,7 +25,11 @@
 #include <json/json.h>
 #include "structs.h"
 
-using namespace std;
+namespace std
+{
+
+
+
 
 class Parameter {
 private:
@@ -52,5 +56,5 @@ public:
 	void updateValueIndex(int direction);
 
 };
-
+}
 #endif /* PARAMETER_H_ */

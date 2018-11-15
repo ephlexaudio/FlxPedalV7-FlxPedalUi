@@ -42,6 +42,7 @@ static void signal_handler(int sig)
 #define dbg 1
 int main(int argc, char *argv[])
 {
+
 	signal(SIGHUP, signal_handler);
 	signal(SIGINT, signal_handler);
 	signal(SIGQUIT, signal_handler);
@@ -68,7 +69,6 @@ int main(int argc, char *argv[])
 	MainInterface mainInt;
 	int menuLevelIndex[4];  // replacing effectIndex and paramIndex, so can be used with utility.
 	PedalStatus pedalStatus;
-	bool disableUsb = false;
 	UserInterface2 ui;
 
 	int status = 0;
@@ -90,11 +90,10 @@ int main(int argc, char *argv[])
 	int rotEncOutput = 0;
 	int rotEncReadCount = 0;
 	int poweroffButtonPushedCount = 0;
-	int timerLoopCount = 0;
 
-	int softKeyGroupIndex[2] = {0,0}; // 0= combo/utility parameter softkeys, 1=utility parameter option softkeys
-	bool hostUiActive = false;
-	int comboIndex = 0;
+
+	 int softKeyGroupIndex[2] = {0,0}; // 0= combo/utility parameter softkeys, 1=utility parameter option softkeys
+	 int comboIndex = 0;
 	int comboUtilSelect = 0;
 	PedalStatus currentStatus;
 
@@ -104,19 +103,13 @@ int main(int argc, char *argv[])
 	vector<string> softKeyAbbrs;
 	bool combosAvailable = true;
 
-	char verString[20] = "";
+	//char verString[20] = "";
 	if(argc > 1)
 	{
 		cout << "input arguments:" << endl;
 		for(int i = 0; i < argc; i++)
 		{
 			cout << i << ":" << argv[i] << endl;
-		}
-
-		if(strncmp(argv[1],"-u",2) == 0)
-		{
-			disableUsb = true;
-			cout << "********USB disabled***********" << endl;
 		}
 	}
 
@@ -305,7 +298,7 @@ int main(int argc, char *argv[])
 									switch(menuLevel)
 									{
 										case 0:
-											if(comboIndex+1 < comboNames.size())
+											if(comboIndex+1 < static_cast<int>(comboNames.size()))
 											{
 												// send "get combo" command to OfxMain via FIFO
 												comboIndex++;
@@ -388,7 +381,7 @@ int main(int argc, char *argv[])
 											break;
 										case 1:		// effects in softkeys
 
-											if(softkey < combo.getEffects().size())
+											if(softkey < static_cast<int>(combo.getEffects().size()))
 											{
 
 												menuLevelIndex[0] = softkey;

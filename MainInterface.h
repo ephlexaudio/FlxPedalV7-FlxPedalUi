@@ -32,10 +32,14 @@
 #include "Utilities.h"
 #include "structs.h"
 
-using namespace std;
+namespace std
+{
+
+
+
 
 #define RX_DATA_SIZE 2000
-#define TX_DATA_SIZE 100
+#define TX_DATA_SIZE 1000
 
 
 
@@ -61,10 +65,10 @@ private:
 	char toMainIntName[50];
 	int fromMainIntFD;
 	int toMainIntFD;
-	int shmData[10];
-	char commandString[100];
 	struct _ipcData *fromMainIntMemory;
 	struct _ipcData *toMainIntMemory;
+	int shmData[10];
+	char commandString[100];
 	int openFlxMainComm(void);
 	int closeFlxMainComm(void);
 
@@ -89,5 +93,5 @@ public:
 	PedalStatus readFlxMain(void);
 
 };
-
+}
 #endif /* MAININTERFACE_H_ */

@@ -21,7 +21,11 @@
 #include <string>
 #include <cstring>
 
-using namespace std;
+namespace std
+{
+
+
+
 
 struct ControlParameterPair
 {
@@ -81,5 +85,5 @@ struct UtilType{
 	string abbr;
 	vector<UtilParam> utilParams;
 };
-
+}
 #endif /* STRUCTS_H_ */

@@ -27,10 +27,14 @@
 #include <iostream>
 #include <json/json.h>
 
-using namespace std;
+namespace std
+{
+
+
+
 
 void clearBuffer(char *buffer, int bufferSize);
 void pabort(const char *s);
-
-
+string getCompactedJSONData(Json::Value data);
+}
 #endif /* UTILITIES_H_ */

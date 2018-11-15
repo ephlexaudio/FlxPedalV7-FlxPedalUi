@@ -24,16 +24,17 @@
 #include <iostream>
 #include <json/json.h>
 #include "structs.h"
-
+#include "Utilities.h"
 #include "Effect.h"
 
-using namespace std;
+namespace std
+{
+
+
 
 
 class Combo {
 private:
-	Json::Reader jsonReader;
-	Json::Value comboDataJson;
 	string name;
 	vector<Effect> effects;
 public:
@@ -48,5 +49,5 @@ public:
 	Effect getEffect(int effectIndex);
 	void updateParameter(int effectIndex, int parameterIndex, int direction);
 };
-
+}
 #endif /* COMBO_H_ */

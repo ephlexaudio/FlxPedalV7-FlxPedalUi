@@ -26,14 +26,16 @@
 
 #include "Parameter.h"
 
-using namespace std;
+namespace std
+{
+
+
+
 
 class Effect {
 private:
 	string name;
 	string abbr;
-	Json::Reader jsonReader;
-	Json::Value effectDataJson;
 	vector<Parameter> parameters;
 public:
 	Effect(Json::Value effectJsonData);
@@ -43,12 +45,12 @@ public:
 	string getAbbr();
 	string getName();
 	vector<string> getParamSoftKeyAbbrs();
-	Parameter getParameter(int paramIndex);
-	ControlParameterPair getControlParameterPair(int paramIndex);
-	void updateParameter(int index, int direction);
+	Parameter getParameter(unsigned int paramIndex);
+	ControlParameterPair getControlParameterPair(unsigned int paramIndex);
+	void updateParameter(unsigned int index, int direction);
 	int getParamCount();
 
 
 };
-
+}
 #endif /* EFFECT_H_ */

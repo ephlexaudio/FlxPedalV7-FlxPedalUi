@@ -11,7 +11,11 @@
 
 
 #define OPEN_TRANSFER_CLOSE 0
-using namespace std;
+namespace std
+{
+
+
+
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -135,13 +139,13 @@ SPI::~SPI()
 
 
 #define dbg 0
-uint8_t SPI::sendData(char *data, int length)
+int SPI::sendData(char *data, int length)
 {
 #if(dbg >= 1)
 	cout << "***** ENTERING: SPI::sendData" << endl;
 #endif
 
-	uint8_t status = 0;
+	int status = 0;
 	char txBuffer[SPI_TX_BUFFER_SIZE];
 	char rxBuffer[SPI_RX_BUFFER_SIZE];
 	clearBuffer(txBuffer,SPI_TX_BUFFER_SIZE);
@@ -195,13 +199,13 @@ uint8_t SPI::sendData(char *data, int length)
 }
 
 #define dbg 0
-uint8_t SPI::getData(char *data, uint16_t length)
+int SPI::getData(char *data, uint16_t length)
 {
 #if(dbg >= 1)
 	cout << "***** ENTERING: SPI::getData" << endl;
 #endif
 
-	uint8_t status = 0;
+	int status = 0;
 
 #if(dbg >= 2)
 	cout << "address: " << address << endl;
@@ -238,4 +242,5 @@ uint8_t SPI::getData(char *data, uint16_t length)
 #endif
 
 	return status;
+}
 }

@@ -24,7 +24,7 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include "config.h"
+
 #include "Combo.h"
 
 #include "ComputeModulePinOuts2.h"
@@ -32,13 +32,19 @@
 #include "GPIOClass.h"
 #include "Utilities.h"
 #include "SPI.h"
+#include "config.h"
+
 #define LCD_LINE1_ADDR 0x00
 #define LCD_LINE2_ADDR 0x40
 #define LCD_LINE3_ADDR 0x14
 #define LCD_LINE4_ADDR 0x54
 #define SET_DDRAM_ADDRESS 0x80
 
-using namespace std;
+namespace std
+{
+
+
+
 
 
 
@@ -82,5 +88,5 @@ public:
 	void writeSoftKeys(int startIndex, vector<string> softKeyAbbrs);
 
 };
-
+}
 #endif /* USERINTERFACE_H_ */

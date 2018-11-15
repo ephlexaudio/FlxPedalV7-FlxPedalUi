@@ -29,7 +29,11 @@
 #include <json/json.h>
 #include <algorithm>
 #include "structs.h"
-using namespace std;
+
+namespace std
+{
+
+
 
 
 class FlxUtility {
@@ -70,5 +74,5 @@ public:
 	int changeFlxUtilityValue(int utilTypeIndex, int utilParamIndex, int genericIndex);
 
 };
-
+}
 #endif /* FLXUTILITY_H_ */

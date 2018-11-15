@@ -7,6 +7,10 @@
 
 #include "FlxUtility.h"
 
+namespace std
+{
+
+
 
 FlxUtility::FlxUtility() {
 	// TODO Auto-generated constructor stub
@@ -285,7 +289,7 @@ int FlxUtility::getFlxUtilityParamOptionVectorSize(int typeIndex, int paramIndex
 
 
 // ************ Get value,struct,etc ***************
-#define dbg 0
+#define dbg 1
 int FlxUtility::getFlxUtilityParams(string paramString)
 {
 	int status = 0;
@@ -606,4 +610,5 @@ int FlxUtility::changeFlxUtilityValue(int utilTypeIndex, int utilParamIndex, int
 #endif
 
 	return status;
+}
 }

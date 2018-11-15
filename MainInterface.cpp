@@ -6,6 +6,10 @@
  */
 
 #include "MainInterface.h"
+namespace std
+{
+
+
 
 
 
@@ -46,6 +50,11 @@ MainInterface::MainInterface() {
 	}
 	strcpy(this->fromMainIntName,"/ipc_toPedalUiInt");
 	strcpy(this->toMainIntName,"/ipc_fromPedalUiInt");
+
+	this->fromMainIntFD = -1;
+	this->toMainIntFD = -1;
+	this->fromMainIntMemory = NULL;
+	this->toMainIntMemory = NULL;
 
 	this->openFlxMainComm();
 	this->closeFlxMainComm();
@@ -92,47 +101,50 @@ string MainInterface::sendUserRequestDataAndWaitForResponse(string userRequestDa
 {
 	int lengthWritten = 0;
 	int status = 0;
-	string responseData;
+	string responseString;
+	responseString.resize(1000);
+	char responseData[2000];
+	clearBuffer(responseData,2000);
 #if(dbg >= 1)
 	cout << "********** ENTERING MainInterface::sendUserRequestDataAndWaitForResponse: " << userRequestData << endl;
 #endif
 	try
 	{
-#if(dbg >= 2)
-		for(auto & requestChar : userRequestData)
-		{
-			cout << requestChar << "(" << (int)requestChar << "), ";
-		}
-		cout << endl;
-#endif
 		char rxData[RX_DATA_SIZE];
+		char txData[TX_DATA_SIZE];
 		int rxDataSize = 0;
 
 		clearBuffer(rxData,RX_DATA_SIZE);
-
-		lengthWritten = write(txFifoFd, userRequestData.c_str(),userRequestData.size());
+		clearBuffer(txData,TX_DATA_SIZE);
+		strncpy(txData,userRequestData.c_str(),TX_DATA_SIZE);
+		lengthWritten = write(txFifoFd, txData,TX_DATA_SIZE);
 
 		if(lengthWritten > 0)
 		{
 			usleep(waitTime*1000);
 			while((rxDataSize = read(rxFifoFd,rxData,RX_DATA_SIZE)) > 1)
 			{
-				responseData += string(rxData);
+				strcat(responseData,rxData);
 			}
+			clearBuffer(rxData,RX_DATA_SIZE);
 		}
-
+		responseString = string(responseData);
 	}
 	catch(exception &e)
 	{
 		cout << "error in MainInterface::sendUserRequestDataAndWaitForResponse: " << e.what() << endl;
-		responseData.clear();
+		clearBuffer(responseData,2000);
 		status = -1;
 	}
 
 #if(dbg >= 1)
-	cout << "********** EXITING MainInterface::sendUserRequestDataAndWaitForResponse: " << responseData << "\t\tstatus: " << status << endl;
+	cout << "********** EXITING MainInterface::sendUserRequestDataAndWaitForResponse: "  << "\t\tstatus: " << status << endl;
 #endif
-	return responseData;
+#if(dbg >= 2)
+	cout << "responseString: " << responseString << endl;
+#endif
+
+	return responseString;
 }
 
 #define dbg 0
@@ -243,12 +255,13 @@ string MainInterface::getComboUiData(string comboName)
 	cout << "********** ENTERING MainInterface::getComboUiData: " << comboName << endl;
 #endif
 	string comboString;
+	comboString.resize(1000,'\0');
 	try
 	{
 		if(comboName.empty() == false)
 		{
 			string getComboCommandString = "getCombo:" + comboName;
-			comboString = this->sendUserRequestDataAndWaitForResponse(getComboCommandString, 1000);
+			comboString = this->sendUserRequestDataAndWaitForResponse(getComboCommandString, 500);
 		}
 		else
 		{
@@ -265,7 +278,10 @@ string MainInterface::getComboUiData(string comboName)
 	}
 
 #if(dbg >= 1)
-	cout << "********** EXITING MainInterface::getComboUiData: " << comboString << "\t\t status: " << status <<  endl;
+	cout << "********** EXITING MainInterface::getComboUiData: " << "\t\t status: " << status <<  endl;
+#endif
+#if(dbg >= 2)
+	cout << "comboString: " << comboString <<   endl;
 #endif
 	return comboString;
 }
@@ -334,7 +350,7 @@ int MainInterface::saveCombo()
 	return status;
 }
 
-#define dbg 0
+#define dbg 2
 string MainInterface::getFlxUtilityData()
 {
 	string utilDataString;
@@ -559,4 +575,5 @@ PedalStatus MainInterface::readFlxMain(void)
 		fromMainIntMemory->change = 0;
 	}
 	return pedalStatus;
+}
 }
