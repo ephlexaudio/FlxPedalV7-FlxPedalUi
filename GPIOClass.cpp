@@ -8,6 +8,7 @@
 
 using namespace std;
 
+
 GPIOClass::GPIOClass()
 {
 	this->gpionum = 4; //GPIO4 is default

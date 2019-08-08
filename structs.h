@@ -21,8 +21,9 @@
 #include <string>
 #include <cstring>
 
-namespace std
-{
+using std::string;
+using std::vector;
+
 
 
 
@@ -41,7 +42,7 @@ struct SoftKeyElement{
 struct PedalStatus{
 	string comboName;
 	string currentStatus;
-	bool usbPortOpen;
+	bool portOpen;
 	bool hostGuiActive;
 };
 
@@ -85,5 +86,5 @@ struct UtilType{
 	string abbr;
 	vector<UtilParam> utilParams;
 };
-}
+
 #endif /* STRUCTS_H_ */

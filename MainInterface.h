@@ -32,8 +32,7 @@
 #include "Utilities.h"
 #include "structs.h"
 
-namespace std
-{
+
 
 
 
@@ -57,7 +56,7 @@ private:
 		int change;
 		string comboName;
 		string currentStatus;
-		bool usbPortOpen;
+		bool portOpen;
 		bool hostGuiActive;
 		int exit;
 	};
@@ -93,5 +92,5 @@ public:
 	PedalStatus readFlxMain(void);
 
 };
-}
+
 #endif /* MAININTERFACE_H_ */

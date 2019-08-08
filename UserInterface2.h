@@ -40,13 +40,6 @@
 #define LCD_LINE4_ADDR 0x54
 #define SET_DDRAM_ADDRESS 0x80
 
-namespace std
-{
-
-
-
-
-
 
 
 class UserInterface2 {
@@ -88,5 +81,5 @@ public:
 	void writeSoftKeys(int startIndex, vector<string> softKeyAbbrs);
 
 };
-}
+
 #endif /* USERINTERFACE_H_ */

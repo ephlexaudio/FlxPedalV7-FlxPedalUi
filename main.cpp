@@ -31,7 +31,7 @@ using namespace std;
 
 static void signal_handler(int sig)
 {
-	cout << "signal received: " << sig <<", OfxPedal exiting ..." << endl;
+	cout << "signal received: " << sig <<", FlxPedalUi exiting ..." << endl;
 	signal(sig, SIG_DFL);
 	kill(getpid(),sig);
 }
@@ -40,9 +40,11 @@ static void signal_handler(int sig)
 
 
 #define dbg 1
+
 int main(int argc, char *argv[])
 {
 
+	cout << "FlxPedalUi PID: " << getpid() << endl;
 	signal(SIGHUP, signal_handler);
 	signal(SIGINT, signal_handler);
 	signal(SIGQUIT, signal_handler);
@@ -85,7 +87,6 @@ int main(int argc, char *argv[])
 	menuLevelIndex[0] = 0;
 	menuLevelIndex[1] = 0;
 	int buttonPushed = -1;
-	bool mainUsbConnected = false;
 
 	int rotEncOutput = 0;
 	int rotEncReadCount = 0;
@@ -103,7 +104,6 @@ int main(int argc, char *argv[])
 	vector<string> softKeyAbbrs;
 	bool combosAvailable = true;
 
-	//char verString[20] = "";
 	if(argc > 1)
 	{
 		cout << "input arguments:" << endl;
@@ -151,7 +151,9 @@ int main(int argc, char *argv[])
 	if(comboNames.size() != 0)
 	{
 		combosAvailable = true;
+#if(dbg >= 1)
 		cout << "combosAvailable: " << comboNames.size() << endl;
+#endif
 		combo.getCombo(mainInt.getComboUiData(comboNames[comboIndex]));
 	}
 	else
@@ -160,7 +162,6 @@ int main(int argc, char *argv[])
 		ui.writeLcd("No combos","available",NULL,NULL);
 	}
 	uiChange = true;
-
 
 
 
@@ -199,23 +200,27 @@ int main(int argc, char *argv[])
 
 
 			//********* Connection mode: pedal (no connection) or host (USB connection)*******************************
-#if(DEBUG == 0)
-			if(pedalStatus.usbPortOpen == true && mainUsbConnected == false)
+
+			if(pedalStatus.hostGuiActive == true && comboUtilSelect == 0)
 			{
 				comboUtilSelect = 1;
-				mainUsbConnected = true;
+
+#if(dbg >= 1)
 				cout << "changing pedal UI to utility mode." << endl;
+#endif
 				uiChange = true;
 
 			}
-			else if(pedalStatus.usbPortOpen == false && mainUsbConnected == true)
+			else if(pedalStatus.hostGuiActive == false && comboUtilSelect == 1)
 			{
 				comboUtilSelect = 0;
-				mainUsbConnected = false;
+
+#if(dbg >= 1)
 				cout << "changing pedal UI to regular mode." << endl;
+#endif
 				uiChange = true;
 			}
-#endif
+
 
 			if(combosAvailable == true)
 			{
@@ -493,7 +498,7 @@ int main(int argc, char *argv[])
 
 									menuLevelIndex[0] = 0;
 									mainInt.saveFlxUtilityData();
-									if(mainUsbConnected == false)
+									if(pedalStatus.hostGuiActive)
 									{
 										comboUtilSelect = 0;
 									}
@@ -544,7 +549,7 @@ int main(int argc, char *argv[])
 								case 1:
 									menuLevelIndex[0] = 0;
 									mainInt.saveFlxUtilityData();
-									if(mainUsbConnected == false)
+									if(pedalStatus.hostGuiActive)
 									{
 										comboUtilSelect = 0;
 									}

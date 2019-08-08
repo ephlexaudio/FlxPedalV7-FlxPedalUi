@@ -3,7 +3,7 @@
 #define GPIO_CLASS_H
 
 #include <string>
-using namespace std;
+
 /* GPIO Class
  * Purpose: Each object instatiated from this class will control a GPIO pin
  * The GPIO pin number must be passed to the overloaded class constructor

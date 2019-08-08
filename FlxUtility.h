@@ -30,8 +30,6 @@
 #include <algorithm>
 #include "structs.h"
 
-namespace std
-{
 
 
 
@@ -74,5 +72,5 @@ public:
 	int changeFlxUtilityValue(int utilTypeIndex, int utilParamIndex, int genericIndex);
 
 };
-}
+
 #endif /* FLXUTILITY_H_ */

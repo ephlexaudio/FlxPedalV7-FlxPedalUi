@@ -8,6 +8,9 @@
 #ifndef UTILITIES_H_
 #define UTILITIES_H_
 
+#include <string>
+#include <cstring>
+#include <iostream>
 #include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -17,24 +20,17 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <algorithm>
 #include <linux/types.h>
 #include <signal.h>
-#include <string>
-#include <cstring>
-#include <iostream>
 #include <json/json.h>
-
-namespace std
-{
-
 
 
 
 void clearBuffer(char *buffer, int bufferSize);
+
 void pabort(const char *s);
-string getCompactedJSONData(Json::Value data);
-}
+
+
 #endif /* UTILITIES_H_ */

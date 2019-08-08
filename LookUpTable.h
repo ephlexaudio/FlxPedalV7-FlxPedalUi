@@ -1,7 +1,7 @@
 #ifndef LOOKUPTABLE_H_
 #define LOOKUPTABLE_H_
 
-using namespace std;
+
 #include <string>
 #include <cstring>
 

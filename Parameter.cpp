@@ -7,8 +7,8 @@
 
 #include "Parameter.h"
 
-namespace std
-{
+using namespace std;
+
 
 
 
@@ -122,4 +122,4 @@ void Parameter::updateValueIndex(int direction)
 #endif
 
 }
-}
+

@@ -6,10 +6,7 @@
  */
 
 #include "MainInterface.h"
-namespace std
-{
-
-
+using namespace std;
 
 
 
@@ -350,7 +347,7 @@ int MainInterface::saveCombo()
 	return status;
 }
 
-#define dbg 2
+#define dbg 0
 string MainInterface::getFlxUtilityData()
 {
 	string utilDataString;
@@ -570,10 +567,10 @@ PedalStatus MainInterface::readFlxMain(void)
 	{
 		pedalStatus.comboName = fromMainIntMemory->comboName;
 		pedalStatus.currentStatus = fromMainIntMemory->currentStatus;
-		pedalStatus.usbPortOpen = fromMainIntMemory->usbPortOpen;
+		pedalStatus.portOpen = fromMainIntMemory->portOpen;
 		pedalStatus.hostGuiActive = fromMainIntMemory->hostGuiActive;
 		fromMainIntMemory->change = 0;
 	}
 	return pedalStatus;
 }
-}
+

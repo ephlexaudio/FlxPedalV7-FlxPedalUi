@@ -25,8 +25,6 @@
 
 #include "config.h"
 
-namespace std
-{
 
 
 
@@ -50,6 +48,6 @@ public:
 
 };
 
-}
+
 
 #endif /* SPI_H_ */

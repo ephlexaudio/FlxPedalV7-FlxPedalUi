@@ -7,8 +7,8 @@
 
 #include "Combo.h"
 
-namespace std
-{
+using namespace std;
+
 
 
 Combo::Combo() {
@@ -129,4 +129,4 @@ void Combo::updateParameter(int effectIndex, int parameterIndex, int direction)
 		cout << "Combo::updateParameter error: " << e.what() << endl;
 	}
 }
-}
+

@@ -7,8 +7,8 @@
 
 #include "Effect.h"
 
-namespace std
-{
+using namespace std;
+
 
 
 
@@ -156,7 +156,7 @@ void Effect::updateParameter(unsigned int index, int direction)
 #endif
 }
 
-#define dbg 1
+#define dbg 0
 int Effect::getParamCount()
 {
 #if(dbg >= 1)
@@ -168,4 +168,4 @@ int Effect::getParamCount()
 #endif
 	return this->parameters.size();
 }
-}
+

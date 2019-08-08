@@ -27,8 +27,7 @@
 #include "Utilities.h"
 #include "Effect.h"
 
-namespace std
-{
+
 
 
 
@@ -49,5 +48,5 @@ public:
 	Effect getEffect(int effectIndex);
 	void updateParameter(int effectIndex, int parameterIndex, int direction);
 };
-}
+
 #endif /* COMBO_H_ */

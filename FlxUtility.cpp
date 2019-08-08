@@ -7,8 +7,8 @@
 
 #include "FlxUtility.h"
 
-namespace std
-{
+using namespace std;
+
 
 
 
@@ -489,7 +489,7 @@ UtilOption FlxUtility::setParamValueOptionStructOptions(vector<string> validOpti
 
 // ************ Changes to utility *******************
 
-#define dbg 2
+#define dbg 0
 int FlxUtility::changeFlxUtilityValue(int utilTypeIndex, int utilParamIndex, int genericIndex)
 {
 	int status = 0;
@@ -559,7 +559,6 @@ int FlxUtility::changeFlxUtilityValue(int utilTypeIndex, int utilParamIndex, int
 			{
 				this->utilTypes[utilTypeIndex].utilParams[utilParamIndex].doubleValue.value = 0.9* utilParam.maximum;
 			}
-			cout << utilParam.minimum << "<" << utilParam.value << "<" << utilParam.maximum << endl;
 			//**************************** Make changes ***********************************
 			if(status == 0)
 			{
@@ -611,4 +610,4 @@ int FlxUtility::changeFlxUtilityValue(int utilTypeIndex, int utilParamIndex, int
 
 	return status;
 }
-}
+

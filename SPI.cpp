@@ -11,8 +11,8 @@
 
 
 #define OPEN_TRANSFER_CLOSE 0
-namespace std
-{
+using namespace std;
+
 
 
 
@@ -243,4 +243,4 @@ int SPI::getData(char *data, uint16_t length)
 
 	return status;
 }
-}
+

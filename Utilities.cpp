@@ -7,10 +7,7 @@
 
 #include "Utilities.h"
 
-namespace std
-{
-
-
+using namespace std;
 
 
 void clearBuffer(char *buffer, int bufferSize)
@@ -21,20 +18,12 @@ void clearBuffer(char *buffer, int bufferSize)
 	}
 }
 
+
 void pabort(const char *s)
 {
 	perror(s);
 }
 
-string getCompactedJSONData(Json::Value data)
-{
-	string reducedData;
-	reducedData = data.toStyledString();
-	reducedData.erase(std::remove(reducedData.begin(), reducedData.end(), '\n'), reducedData.end());
-	reducedData.erase(std::remove(reducedData.begin(), reducedData.end(), '\r'), reducedData.end());
-	reducedData.erase(std::remove(reducedData.begin(), reducedData.end(), '\t'), reducedData.end());
-	reducedData.erase(std::remove(reducedData.begin(), reducedData.end(), ' '), reducedData.end());
 
-	return reducedData;
-}
-}
+
+

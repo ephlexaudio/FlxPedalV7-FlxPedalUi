@@ -12,8 +12,8 @@
 //#include "config.h"
 
 
-namespace std
-{
+using namespace std;
+
 
 
 
@@ -278,7 +278,7 @@ void UserInterface2::writeLcdHeader(int menuLevel, string title, string subtitle
 
 }
 
-#define dbg 1
+#define dbg 0
 void UserInterface2::writeLcdFxParameter(Parameter parameter)
 {
 #if(dbg >= 1)
@@ -304,7 +304,7 @@ void UserInterface2::writeLcdFxParameter(Parameter parameter)
 
 }
 
-#define dbg 2
+#define dbg 0
 void UserInterface2::writeLcdUtilParameter(UtilParam parameter)
 {
 #if(dbg >= 1)
@@ -470,4 +470,4 @@ string UserInterface2::centeredString(string text, int totalStringLength)
 	return centeredText;
 }
 
-}
+
